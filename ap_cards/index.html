@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>Cards Index</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  body{font-family:sans-serif;padding:20px}
+  h1{font-size:20px;margin:0 0 12px}
+  #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+  a.card{display:block;padding:12px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;background:#fafafa}
+  a.card:hover{background:#f0f0f0}
+  .small{opacity:.7;font-size:12px}
+</style>
+</head>
+<body>
+<h1>Cards</h1>
+<p class="small">スプレッドシートのシート名が自動で並びます。</p>
+<div id="list">読み込み中…</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxhQYfqqNIk6ezndntwkrbpBb2hpH5Q6UD2fbx36z3xWu9yWLriVoWM5kGyKNABV4ttsA/exec"; // ←あなたのGAS URL
+
+async function main(){
+  try{
+    const res = await fetch(API_URL + "?list=1", {cache:"no-store"});
+    const sheets = await res.json(); // 例: ["ryohan","majyan",...]
+    const wrap = document.getElementById("list");
+    wrap.innerHTML = "";
+    sheets.forEach(name=>{
+      const a = document.createElement("a");
+      a.className = "card";
+      a.href = `page.html?sheet=${encodeURIComponent(name)}`;
+      a.textContent = name;
+      wrap.appendChild(a);
+    });
+    if(!sheets.length) wrap.textContent = "シートが見つかりません。";
+  }catch(e){
+    console.error(e);
+    document.getElementById("list").textContent = "取得エラー";
+  }
+}
+main();
+</script>
+</body>
+</html>

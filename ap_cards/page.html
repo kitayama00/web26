@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>Card</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  *{box-sizing:border-box}
+  :root{--pad:14px}
+  body{font-family:sans-serif;margin:0;padding-bottom:88px;background:#fafafa}
+  header{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:10px var(--pad);z-index:10}
+  h2{margin:0;font-size:18px}
+  .controls{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  button,label,select{font-size:14px}
+  .wrap{max-width:760px;margin:0 auto;padding:var(--pad)}
+  .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:var(--pad);box-shadow:0 2px 10px rgba(0,0,0,.06);min-height:220px}
+  .front{font-size:30px;font-weight:800;letter-spacing:.3px}
+  .back .section{margin:10px 0}
+  .sec-title{font-size:12px;opacity:.65;margin:0 0 4px}
+  .sec-body{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .learn-top{margin-left:auto;display:flex;align-items:center;gap:8px}
+  audio,video{width:100%;margin:8px 0}
+  img.cardimg{width:100%;height:auto;border:1px solid #eee;border-radius:10px;object-fit:contain;background:#f7f7f7;margin:8px 0;max-height:400px}
+  .muted{opacity:.6}
+  .count{opacity:.7}
+  footer.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;padding:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  a.inline{word-break:break-all;color:#0066cc;text-decoration:none}
+  a.inline:hover{text-decoration:underline}
+  .yt{position:relative;width:100%;aspect-ratio:16/9}
+  .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .yt-fallback{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid #ddd;background:#000}
+  .yt-fallback img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.1)}
+  .yt-fallback a.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;font-weight:700;background:linear-gradient(transparent, rgba(0,0,0,.35))}
+  .yt-fallback .hint{position:absolute;right:8px;bottom:8px;font-size:12px;color:#fff;background:rgba(0,0,0,.5);padding:3px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <h2 id="title" style="margin-right:8px">Card</h2>
+    <div class="count" id="count">0 / 0</div>
+    <label class="learn-top"><input type="checkbox" id="learnedChkTop"> このカードを覚えた</label>
+  </div>
+  <div class="controls">
+    <label>表の列:
+      <select id="frontSelect"></select>
+    </label>
+    <label><input type="checkbox" id="hideLearned" checked> 覚えた項目を非表示</label>
+    <button id="resetBtn">学習状態リセット</button>
+    <button onclick="location.href='index.html'">トップ</button>
+    <span class="muted">← →:移動 / Space:表裏 / L:既習</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card" id="card">
+    <div id="front" class="front">読み込み中…</div>
+    <div id="back" class="back" style="display:none">
+      <div id="backContainer"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="nav">
+  <button id="prevBtn">◀ 前</button>
+  <button id="flipBtn">表/裏</button>
+  <button id="nextBtn">次 ▶</button>
+  <button id="shuffleBtn">シャッフル</button>
+  <button id="pauseBtn">一時停止</button>
+  <button id="replayBtn">もう一度再生</button>
+</footer>
+
+<script>
+// ===== 設定 =====
+// ★修正(1): JSONファイルが置かれている「フォルダ」のベースURLを指定
+const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
+// ★新設(2): 画像/音声が置かれている「sozai」フォルダのベースURLを指定
+const SOZAI_BASE_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/sozai/";
+const FRONT_PREFER = ["英単語","単語","word","Word"];
+// YouTube 埋め込みのポリシー（auto: 埋め込みを試み、失敗時はフォールバック / link: いきなりフォールバック）
+const YT_MODE = (location.protocol === "file:") ? "link" : "auto";
+// =================
+
+const SHEET = new URLSearchParams(location.search).get("sheet") || "";
+document.getElementById("title").textContent = SHEET || "Card";
+const KEY_PREFIX = `cards:${SHEET}:`;
+const FRONT_STORE_KEY = `cards:${SHEET}:frontCol`;
+
+const getKey  = w => KEY_PREFIX + w;
+const isLearn = w => localStorage.getItem(getKey(w)) === "1";
+const setLearn = (w,v) => v ? localStorage.setItem(getKey(w),"1") : localStorage.removeItem(getKey(w));
+
+let rowsAll = [];
+let headers = [];
+let rowsView = [];
+let idx = 0;
+let showBack = false;
+let lastAudio = null;
+
+const $ = id => document.getElementById(id);
+const el = {
+  front: $("front"),
+  back: $("back"),
+  backBox: $("backContainer"),
+  learnedTop: $("learnedChkTop"),
+  hide: $("hideLearned"),
+  frontSel: $("frontSelect"),
+  count: $("count")
+};
+
+// ========= ヘルパー =========
+function hasExt(u){ return /\.[a-z0-9]{2,5}(\?|$)/i.test(u||""); }
+function isLocalLike(u){
+  if(!u) return false;
+  if(/^https?:\/\//i.test(u)) return false;
+  if(/^data:/i.test(u)) return false;
+  return true;
+}
+
+// ★修正(3): 画像や音声のパスを、Cloud Storage (SOZAI_BASE_URL) に向けるよう修正
+function resolveSozaiPath(u){
+  if(!u) return "";
+  let s = String(u).trim();
+  if(!s) return s;
+  // 末尾・先頭の全角句読点/括弧/引用符などを除去
+  s = s.replace(/^[\s,;:()［］【】「」『』“”'"。．、]+|[\s,;:()［］【】「」『』“”'"。．、]+$/g, "");
+
+  // 既に完全なURL（http, data:）ならそのまま返す
+  if(!isLocalLike(s)) return s;
+
+  // "sozai/test01.jpg" のような古い記述も "test01.jpg" に直す
+  if(s.includes("sozai/")) {
+    s = s.split("/").pop(); 
+  }
+
+  // "test01.jpg" のようなファイル名（拡張子あり）の場合、Cloud StorageのURLを組み立てる
+  // "./" や "../" や "/" で始まるパスは、ローカル（Hosting上）のファイルとみなし、そのまま返す
+  if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")) {
+    // ファイル名に日本語やスペースが含まれる可能性を考慮し、エンコードする
+    return SOZAI_BASE_URL + encodeURIComponent(s);
+  }
+  
+  // それ以外（拡張子なし、または ./ などで始まるパス）はそのまま返す
+  return s;
+}
+
+function isVideoUrl(u){ return /\.(mp4|webm|ogg|mkv)(\?|$)/i.test(u||""); }
+function isAudioUrl(u){ return /\.(mp3|m4a|aac|wav|ogg|opus)(\?|$)/i.test(u||""); }
+function isHttpUrl(u){ return /^https?:\/\//i.test(u || ""); }
+function baseName(u){
+  try{
+    const x = (u||"").split("#")[0].split("?")[0];
+    return x.split("/").pop() || x;
+  }catch(_){ return u; }
+}
+function isYouTubeUrl(u){
+  return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(u||"");
+}
+function parseYouTubeId(u){
+  if(!u) return null;
+  const m = u.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : null;
+}
+function parseStartSeconds(u){
+  try{
+    const url = new URL(u, location.origin);
+    const t = url.searchParams.get("t");
+    const start = url.searchParams.get("start");
+    const toSec = (str)=>{
+      if(!str) return 0;
+      if(/^\d+$/.test(str)) return parseInt(str,10);
+      let sec = 0;
+      const m = str.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
+      if(m){ if(m[1]) sec += +m[1]*3600; if(m[2]) sec += +m[2]*60; if(m[3]) sec += +m[3]; }
+      return sec;
+    };
+    return start ? toSec(start) : toSec(t);
+  }catch{ return 0; }
+}
+function ytEmbedUrl(u){
+  const id = parseYouTubeId(u);
+  if(!id) return "";
+  const start = parseStartSeconds(u);
+  const params = new URLSearchParams();
+  if(start) params.set("start", String(start));
+  params.set("modestbranding", "1");
+  params.set("rel", "0");
+  params.set("playsinline", "1");
+  return `https://www.youtube-nocookie.com/embed/${id}${params.toString() ? "?" + params.toString() : ""}`;
+}
+function ytWatchUrl(u){
+  const id = parseYouTubeId(u);
+  if(!id) return u;
+  const start = parseStartSeconds(u);
+  const p = new URLSearchParams(); p.set("v", id); if(start) p.set("t", String(start));
+  return `https://www.youtube.com/watch?${p.toString()}`;
+}
+function ytThumbUrl(u){
+  const id = parseYouTubeId(u);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "";
+}
+
+function extractGooglePhotosId(url){
+  const match1 = url.match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/);
+  if(match1) return match1[1];
+  const match2 = url.match(/photos\.app\.goo\.gl\/([A-Za-z0-9]+)/);
+  if(match2) return match2[1];
+  return null;
+}
+function getGooglePhotosDirectUrl(url){
+  const id = extractGooglePhotosId(url);
+  if(id && id.startsWith("AF1Qip")){
+    return `https://lh3.googleusercontent.com/pw/${id}=w800`;
+  }
+  // ★注: Google PhotosのプロキシとしてGASを使うロジックは、GAS(API_URL)廃止により動作しなくなります
+  // return API_URL + "?proxy=1&url=" + encodeURIComponent(url);
+  return url; // とりあえず元のURLを返す
+}
+function normalizeDrive(u){
+  if(!u) return "";
+  const first = String(u).trim().split(/[\s\n]+/)[0];
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/,
+    /drive\.google\.com\/open\?id=([A-Za-z0-9_-]{10,})/,
+    /docs\.google\.com\/.*?\/d\/([A-Za-z0-9_-]{10,})/,
+    /drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]{10,})/
+  ];
+  for(const p of patterns){
+    const m = first.match(p);
+    if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  }
+  if(first.includes("/uc?export=download&id=")) return first;
+  return first;
+}
+function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u || ""); }
+function isImageUrl(u){
+  if(!u) return false;
+  const lower = u.toLowerCase();
+  if(/\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(lower)) return true;
+  if(lower.includes("googleusercontent.com")) return true;
+  if(lower.includes("/uc?export=download&id=")) return true;
+  if(lower.includes("lh3.google")) return true;
+  if(lower.includes("imgur.com")) return true;
+  if(lower.includes("gyazo.com")) return true;
+  return false;
+}
+function urlize(text){
+  const re = /(https?:\/\/[^\s]+)/g;
+  const frag = document.createDocumentFragment();
+  let last = 0, m;
+  while((m = re.exec(text)) !== null){
+    if(m.index > last) frag.append(document.createTextNode(text.slice(last, m.index)));
+    const a = document.createElement("a");
+    a.href = m[0]; a.textContent = m[0];
+    a.target = "_blank"; a.rel = "noopener"; a.className = "inline";
+    frag.append(a);
+    last = re.lastIndex;
+  }
+  if(last < text.length) frag.append(document.createTextNode(text.slice(last)));
+  return frag;
+}
+function pickInitialFront(headers){
+  const saved = localStorage.getItem(FRONT_STORE_KEY);
+  if(saved && headers.includes(saved)) return saved;
+  for(const c of FRONT_PREFER){ if(headers.includes(c)) return c; }
+  return headers[0] || "";
+}
+function rebuildView(){
+  const frontKey = el.frontSel.value;
+  rowsView = rowsAll.filter(row => {
+    const frontVal = String(row[frontKey] ?? "");
+    return el.hide.checked ? !isLearn(frontVal) : true;
+  });
+  if(rowsView.length === 0) idx = 0;
+  else if(idx >= rowsView.length) idx = rowsView.length - 1;
+  el.count.textContent = `${rowsView.length ? idx+1 : 0} / ${rowsView.length}`;
+}
+
+// ========= YouTube描画（埋め込み＋フォールバック） =========
+function renderYouTube(sec, urlOriginal){
+  const embed = ytEmbedUrl(urlOriginal);
+  const watch = ytWatchUrl(urlOriginal);
+  const thumb = ytThumbUrl(urlOriginal);
+
+  // いきなりフォールバック指定（file:// など）
+  if(YT_MODE === "link" || !embed){
+    const fb = document.createElement("div");
+    fb.className = "yt-fallback";
+    if(thumb){
+      const img = document.createElement("img");
+      img.src = thumb; img.alt = "YouTube Thumbnail"; img.loading = "lazy";
+      fb.appendChild(img);
+    }
+    const a = document.createElement("a");
+    a.href = watch; a.target = "_blank"; a.rel = "noopener";
+    a.className = "play";
+    a.innerHTML = "▶ YouTubeで再生";
+    fb.appendChild(a);
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = "クリックで開く";
+    fb.appendChild(hint);
+    sec.appendChild(fb);
+    return;
+  }
+
+  // 埋め込み本体
+  const box = document.createElement("div");
+  box.className = "yt";
+  const iframe = document.createElement("iframe");
+  iframe.src = embed;
+  iframe.loading = "lazy";
+  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+  iframe.setAttribute("allowfullscreen", "");
+
+  // 下に常時リンク（埋め込みNGの動画やエラー153のときに逃げ道を残す）
+  const under = document.createElement("div");
+  under.className = "muted";
+  under.style.marginTop = "6px";
+  const link = document.createElement("a");
+  link.href = watch; link.target = "_blank"; link.rel = "noopener";
+  link.textContent = "YouTubeで開く";
+  link.className = "inline";
+  under.appendChild(link);
+
+  box.appendChild(iframe);
+  sec.appendChild(box);
+  sec.appendChild(under);
+}
+
+// ========= 裏面描画 =========
+function renderBack(row){
+  el.backBox.innerHTML = "";
+  const frontKey = el.frontSel.value;
+
+  headers.forEach(key => {
+    if(key === frontKey) return;
+    const raw = row[key];
+    if(!raw) return;
+
+    const sec = document.createElement("div");
+    sec.className = "section";
+    const title = document.createElement("p");
+    title.className = "sec-title";
+    title.textContent = key;
+    sec.appendChild(title);
+
+    const val = String(raw).trim();
+    // 改行・カンマ・全角スペースをトークン化
+    const tokens = val
+      .split(/[\n,、]+|t+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    let hasMedia = false;
+    let remainingText = val;
+
+    tokens.forEach(tok => {
+      if(!tok) return;
+      let resolved = resolveSozaiPath(tok);
+
+      // YouTube
+      if(isYouTubeUrl(resolved)){
+        renderYouTube(sec, resolved);
+        hasMedia = true;
+        remainingText = remainingText.replace(tok, "").trim();
+        return;
+      }
+
+      // Google Photos
+      if(isGooglePhotosUrl(resolved)){
+        const img = document.createElement("img");
+        img.className = "cardimg";
+        img.src = getGooglePhotosDirectUrl(resolved); // ★注: この関数はGAS廃止によりプロキシ機能が動作しません
+        img.alt = key;
+        img.loading = "lazy";
+        img.onerror = function(){
+           // ★注: エラー時のGASプロキシ呼び出しも動作しなくなります
+          if(!this.dataset.retried){
+            this.dataset.retried = "true";
+            // this.src = API_URL + "?proxy=1&url=" + encodeURIComponent(resolved); // 動作しない
+          } else {
+            this.style.display='none';
+            const err=document.createElement("div");
+            err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`;
+            err.style.color="#999";err.style.fontSize="12px";
+            this.parentNode.insertBefore(err,this);
+          }
+        };
+        sec.appendChild(img);
+        hasMedia=true;
+        remainingText=remainingText.replace(tok,"").trim();
+        return;
+      }
+
+      // HTTP → Drive直リンク化
+      if(isHttpUrl(resolved)) resolved = normalizeDrive(resolved);
+
+      // 画像
+      if(isImageUrl(resolved)){
+        const img=document.createElement("img");
+        img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
+        img.onerror=function(){
+          this.style.display="none";
+          const err=document.createElement("div");
+          err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`;
+          err.style.color="#999";err.style.fontSize="12px";
+          this.parentNode.insertBefore(err,this);
+        };
+        sec.appendChild(img);
+        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+      }
+
+      // 音声（下にファイル名）
+      if(isAudioUrl(resolved)){
+        const audio=document.createElement("audio");
+        audio.controls=true; audio.src=resolved;
+        audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
+        sec.appendChild(audio);
+        const cap=document.createElement("div");
+        cap.className="muted"; cap.textContent=baseName(resolved);
+        sec.appendChild(cap);
+        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+      }
+
+      // 動画（下にファイル名）
+      if(isVideoUrl(resolved)){
+        const video=document.createElement("video");
+        video.controls=true; video.src=resolved;
+        video.style.width="100%"; video.style.margin="8px 0";
+        sec.appendChild(video);
+        const cap=document.createElement("div");
+        cap.className="muted"; cap.textContent=baseName(resolved);
+        sec.appendChild(cap);
+        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+      }
+    });
+
+    // メディア以外のテキスト
+    if(remainingText && remainingText.trim()){
+      const body=document.createElement("div");
+      body.className="sec-body";
+      if(remainingText.includes("http")) body.appendChild(urlize(remainingText));
+      else body.textContent=remainingText;
+      sec.appendChild(body);
+    }
+
+    // URLだけだった場合のフォールバック
+    if(!hasMedia && !remainingText.trim() && val){
+      const body=document.createElement("div");
+      body.className="sec-body"; body.appendChild(urlize(val)); sec.appendChild(body);
+    }
+
+    el.backBox.appendChild(sec);
+  });
+}
+
+// ========= 表示処理 =========
+function render(){
+  if(rowsView.length===0){
+    el.front.textContent="表示できるカードがありません";
+    el.back.style.display="none"; el.front.style.display="block";
+    el.learnedTop.checked=false; el.count.textContent=`0 / 0`; return;
+  }
+  const frontKey=el.frontSel.value;
+  const row=rowsView[idx];
+  const frontText=String(row[frontKey]??"(no value)");
+  if(showBack){
+    el.front.style.display="none"; el.back.style.display="block";
+    renderBack(row);
+    el.learnedTop.checked=isLearn(frontText);
+  }else{
+    el.back.style.display="none"; el.front.style.display="block";
+    el.front.textContent=frontText;
+  }
+  el.count.textContent=`${idx+1} / ${rowsView.length}`;
+}
+
+// ========= ナビ =========
+function next(){ if(!rowsView.length) return; if(!showBack){showBack=true;render();}else{idx=(idx+1)%rowsView.length;showBack=false;render();} }
+function prev(){ if(!rowsView.length) return; if(showBack){showBack=false;render();}else{idx=(idx-1+rowsView.length)%rowsView.length;showBack=true;render();} }
+function flip(){ if(!rowsView.length) return; showBack=!showBack; render(); }
+
+// ========= データ取得 =========
+// ★修正(4): fetchするURLを、?sheet= の値から動的に組み立てるように修正
+async function load(){
+  try{
+    // URLから ?sheet= の値（例: "テスト1"）を取得
+    if (!SHEET) {
+      el.front.textContent = "URLに ?sheet=シート名 を指定してください";
+      return;
+    }
+    
+    // API_URL（ベース）と SHEET（ファイル名）を合体させて、正しいJSON URLを作る
+    // 例: ".../cards/" + "テスト1" + ".json"
+    // （※シート名に日本語が含まれることを考慮し、ファイル名部分をエンコード）
+    const jsonUrl = API_URL + encodeURIComponent(SHEET) + ".json";
+
+    // 組み立てたURLでJSONを取得
+    const res = await fetch(jsonUrl, {cache:"no-store"});
+
+    if (!res.ok) {
+      // fetchに失敗した場合（404 Not Foundなど）
+      throw new Error(`JSONファイルの読み込みに失敗しました: ${res.status} ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    rowsAll = data;
+    headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
+
+    // 表列セレクタ
+    el.frontSel.innerHTML = "";
+    headers.forEach(k => {
+      const opt = document.createElement("option");
+      opt.value = k; opt.textContent = k; el.frontSel.appendChild(opt);
+    });
+
+    const initial = pickInitialFront(headers);
+    el.frontSel.value = initial;
+    localStorage.setItem(FRONT_STORE_KEY, initial);
+
+    rebuildView();
+    idx = 0;
+    showBack = false;
+    render();
+
+  } catch(e){
+    el.front.textContent = `取得エラー: ${e.message}`;
+    console.error(e);
+  }
+}
+
+// ========= イベント =========
+el.learnedTop.addEventListener("change", (ev) => {
+  if(!rowsView.length) return;
+  const w = String(rowsView[idx][el.frontSel.value] ?? "");
+  setLearn(w, ev.target.checked);
+  if(el.hide.checked){
+    rebuildView();
+    if(idx >= rowsView.length) idx = 0;
+  }
+  render();
+});
+
+el.hide.addEventListener("change", () => {
+  rebuildView();
+  render();
+});
+
+$("resetBtn").addEventListener("click", () => {
+  if(!confirm("このカードセットの学習フラグを全て消します。よろしいですか？")) return;
+  Object.keys(localStorage).forEach(k => { if(k.startsWith(KEY_PREFIX)) localStorage.removeItem(k); });
+  rebuildView();
+  render();
+});
+
+el.frontSel.addEventListener("change", () => {
+  localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value);
+  rebuildView();
+  showBack = false;
+  render();
+});
+
+// ボタン
+$("prevBtn").addEventListener("click", prev);
+$("nextBtn").addEventListener("click", next);
+$("flipBtn").addEventListener("click", flip);
+
+$("shuffleBtn").addEventListener("click", () => {
+  for(let i = rowsView.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [rowsView[i], rowsView[j]] = [rowsView[j], rowsView[i]];
+  }
+  idx = 0;
+  showBack = false;
+  render();
+});
+
+$("pauseBtn").addEventListener("click", () => { if(lastAudio) lastAudio.pause(); });
+$("replayBtn").addEventListener("click", () => { if(lastAudio){ lastAudio.currentTime = 0; lastAudio.play(); } });
+
+// キーボード
+document.addEventListener("keydown", (e) => {
+  if(e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if(e.key === "ArrowRight") next();
+  else if(e.key === "ArrowLeft") prev();
+  else if(e.key === " ") { e.preventDefault(); flip(); }
+  else if(e.key.toLowerCase() === "l") { el.learnedTop.checked = !el.learnedTop.checked; el.learnedTop.dispatchEvent(new Event("change")); }
+});
+
+// 初期化
+load();
+</script>
+</body>
+</html>
