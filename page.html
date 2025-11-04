@@ -72,12 +72,9 @@
 
 <script>
 // ===== 設定 =====
-// ★修正(1): JSONファイルが置かれている「フォルダ」のベースURLを指定
 const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
-// ★新設(2): 画像/音声が置かれている「sozai」フォルダのベースURLを指定
-const SOZAI_BASE_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/sozai/";
+const SOZAI_BASE_URL = API_URL + "sozai/"; // ← /cards/sozai/ に修正
 const FRONT_PREFER = ["英単語","単語","word","Word"];
-// YouTube 埋め込みのポリシー（auto: 埋め込みを試み、失敗時はフォールバック / link: いきなりフォールバック）
 const YT_MODE = (location.protocol === "file:") ? "link" : "auto";
 // =================
 
@@ -117,30 +114,21 @@ function isLocalLike(u){
   return true;
 }
 
-// ★修正(3): 画像や音声のパスを、Cloud Storage (SOZAI_BASE_URL) に向けるよう修正
+// /sozai 省略入力を Cloud Storage の cards/sozai/ に自動マップ
 function resolveSozaiPath(u){
   if(!u) return "";
   let s = String(u).trim();
   if(!s) return s;
-  // 末尾・先頭の全角句読点/括弧/引用符などを除去
+
   s = s.replace(/^[\s,;:()［］【】「」『』“”'"。．、]+|[\s,;:()［］【】「」『』“”'"。．、]+$/g, "");
 
-  // 既に完全なURL（http, data:）ならそのまま返す
   if(!isLocalLike(s)) return s;
 
-  // "sozai/test01.jpg" のような古い記述も "test01.jpg" に直す
-  if(s.includes("sozai/")) {
-    s = s.split("/").pop(); 
-  }
+  if(s.includes("sozai/")) s = s.split("/").pop(); // 旧形式をファイル名だけに
 
-  // "test01.jpg" のようなファイル名（拡張子あり）の場合、Cloud StorageのURLを組み立てる
-  // "./" や "../" や "/" で始まるパスは、ローカル（Hosting上）のファイルとみなし、そのまま返す
-  if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")) {
-    // ファイル名に日本語やスペースが含まれる可能性を考慮し、エンコードする
+  if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")){
     return SOZAI_BASE_URL + encodeURIComponent(s);
   }
-  
-  // それ以外（拡張子なし、または ./ などで始まるパス）はそのまま返す
   return s;
 }
 
@@ -212,9 +200,7 @@ function getGooglePhotosDirectUrl(url){
   if(id && id.startsWith("AF1Qip")){
     return `https://lh3.googleusercontent.com/pw/${id}=w800`;
   }
-  // ★注: Google PhotosのプロキシとしてGASを使うロジックは、GAS(API_URL)廃止により動作しなくなります
-  // return API_URL + "?proxy=1&url=" + encodeURIComponent(url);
-  return url; // とりあえず元のURLを返す
+  return url;
 }
 function normalizeDrive(u){
   if(!u) return "";
@@ -282,7 +268,6 @@ function renderYouTube(sec, urlOriginal){
   const watch = ytWatchUrl(urlOriginal);
   const thumb = ytThumbUrl(urlOriginal);
 
-  // いきなりフォールバック指定（file:// など）
   if(YT_MODE === "link" || !embed){
     const fb = document.createElement("div");
     fb.className = "yt-fallback";
@@ -304,7 +289,6 @@ function renderYouTube(sec, urlOriginal){
     return;
   }
 
-  // 埋め込み本体
   const box = document.createElement("div");
   box.className = "yt";
   const iframe = document.createElement("iframe");
@@ -313,7 +297,6 @@ function renderYouTube(sec, urlOriginal){
   iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
   iframe.setAttribute("allowfullscreen", "");
 
-  // 下に常時リンク（埋め込みNGの動画やエラー153のときに逃げ道を残す）
   const under = document.createElement("div");
   under.className = "muted";
   under.style.marginTop = "6px";
@@ -346,9 +329,10 @@ function renderBack(row){
     sec.appendChild(title);
 
     const val = String(raw).trim();
-    // 改行・カンマ・全角スペースをトークン化
+
+    // 改行・カンマ・タブで分割（バグ修正: \t）
     const tokens = val
-      .split(/[\n,、]+|t+/)
+      .split(/[\n,、]+|\t+/)
       .map(s => s.trim())
       .filter(Boolean);
 
@@ -371,21 +355,15 @@ function renderBack(row){
       if(isGooglePhotosUrl(resolved)){
         const img = document.createElement("img");
         img.className = "cardimg";
-        img.src = getGooglePhotosDirectUrl(resolved); // ★注: この関数はGAS廃止によりプロキシ機能が動作しません
+        img.src = getGooglePhotosDirectUrl(resolved);
         img.alt = key;
         img.loading = "lazy";
         img.onerror = function(){
-           // ★注: エラー時のGASプロキシ呼び出しも動作しなくなります
-          if(!this.dataset.retried){
-            this.dataset.retried = "true";
-            // this.src = API_URL + "?proxy=1&url=" + encodeURIComponent(resolved); // 動作しない
-          } else {
-            this.style.display='none';
-            const err=document.createElement("div");
-            err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`;
-            err.style.color="#999";err.style.fontSize="12px";
-            this.parentNode.insertBefore(err,this);
-          }
+          this.style.display='none';
+          const err=document.createElement("div");
+          err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`;
+          err.style.color="#999";err.style.fontSize="12px";
+          this.parentNode.insertBefore(err,this);
         };
         sec.appendChild(img);
         hasMedia=true;
@@ -436,7 +414,6 @@ function renderBack(row){
       }
     });
 
-    // メディア以外のテキスト
     if(remainingText && remainingText.trim()){
       const body=document.createElement("div");
       body.className="sec-body";
@@ -445,7 +422,6 @@ function renderBack(row){
       sec.appendChild(body);
     }
 
-    // URLだけだった場合のフォールバック
     if(!hasMedia && !remainingText.trim() && val){
       const body=document.createElement("div");
       body.className="sec-body"; body.appendChild(urlize(val)); sec.appendChild(body);
@@ -482,33 +458,20 @@ function prev(){ if(!rowsView.length) return; if(showBack){showBack=false;render
 function flip(){ if(!rowsView.length) return; showBack=!showBack; render(); }
 
 // ========= データ取得 =========
-// ★修正(4): fetchするURLを、?sheet= の値から動的に組み立てるように修正
 async function load(){
   try{
-    // URLから ?sheet= の値（例: "テスト1"）を取得
     if (!SHEET) {
       el.front.textContent = "URLに ?sheet=シート名 を指定してください";
       return;
     }
-    
-    // API_URL（ベース）と SHEET（ファイル名）を合体させて、正しいJSON URLを作る
-    // 例: ".../cards/" + "テスト1" + ".json"
-    // （※シート名に日本語が含まれることを考慮し、ファイル名部分をエンコード）
     const jsonUrl = API_URL + encodeURIComponent(SHEET) + ".json";
-
-    // 組み立てたURLでJSONを取得
     const res = await fetch(jsonUrl, {cache:"no-store"});
-
-    if (!res.ok) {
-      // fetchに失敗した場合（404 Not Foundなど）
-      throw new Error(`JSONファイルの読み込みに失敗しました: ${res.status} ${res.statusText}`);
-    }
+    if (!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
 
     const data = await res.json();
     rowsAll = data;
     headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
 
-    // 表列セレクタ
     el.frontSel.innerHTML = "";
     headers.forEach(k => {
       const opt = document.createElement("option");
