@@ -5,11 +5,54 @@
 <title>Cards Index</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-  body{font-family:sans-serif;padding:20px}
+  :root{
+    color-scheme: light dark;
+  }
+  body{
+    font-family:sans-serif;
+    margin:0;
+    padding:20px;
+    background:var(--bg);
+    color:var(--fg);
+    transition:.2s;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#111;
+      --fg:#ddd;
+      --card-bg:#222;
+      --card-border:#333;
+      --card-hover:#333;
+    }
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#fff;
+      --fg:#111;
+      --card-bg:#fafafa;
+      --card-border:#ccc;
+      --card-hover:#f0f0f0;
+    }
+  }
   h1{font-size:20px;margin:0 0 12px}
-  #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-  a.card{display:block;padding:12px;border:1px solid #ccc;border-radius:10px;text-decoration:none;color:#111;background:#fafafa}
-  a.card:hover{background:#f0f0f0}
+  #list{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:10px;
+  }
+  a.card{
+    display:block;
+    padding:12px;
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    text-decoration:none;
+    color:inherit;
+    background:var(--card-bg);
+    transition:.2s;
+  }
+  a.card:hover{
+    background:var(--card-hover);
+  }
   .small{opacity:.7;font-size:12px}
 </style>
 </head>
@@ -19,25 +62,34 @@
 <div id="list">読み込み中…</div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxhQYfqqNIk6ezndntwkrbpBb2hpH5Q6UD2fbx36z3xWu9yWLriVoWM5kGyKNABV4ttsA/exec"; // ←あなたのGAS URL
+// Cloud Storage 上の index.json のURL（公開URLを貼る）
+const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/index.json";
 
 async function main(){
+  const wrap = document.getElementById("list");
   try{
-    const res = await fetch(API_URL + "?list=1", {cache:"no-store"});
-    const sheets = await res.json(); // 例: ["ryohan","majyan",...]
-    const wrap = document.getElementById("list");
+    const res = await fetch(API_URL, {cache:"no-store"});
+    if(!res.ok) throw new Error("Fetch failed: " + res.status);
+    const sheets = await res.json(); // 例: [{"slug":"mahjong","title":"麻雀"},...]
     wrap.innerHTML = "";
-    sheets.forEach(name=>{
+    if(!sheets.length){
+      wrap.textContent = "シートが見つかりません。";
+      return;
+    }
+
+    sheets.forEach(obj=>{
       const a = document.createElement("a");
       a.className = "card";
-      a.href = `page.html?sheet=${encodeURIComponent(name)}`;
-      a.textContent = name;
+      // slugがあればslug、なければtitleやnameを使用
+      const slug = obj.slug || obj.title || obj.name;
+      a.href = `page.html?sheet=${encodeURIComponent(slug)}`;
+      a.textContent = obj.title || slug;
       wrap.appendChild(a);
     });
-    if(!sheets.length) wrap.textContent = "シートが見つかりません。";
+
   }catch(e){
     console.error(e);
-    document.getElementById("list").textContent = "取得エラー";
+    wrap.textContent = "取得エラー";
   }
 }
 main();
