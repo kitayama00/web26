@@ -3,240 +3,118 @@
 <head>
 <meta charset="UTF-8" />
 <title>Card</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <style>
-/* =========================================================
-  # コンセプト / 調整ポイント
-  # ・上下の操作バーを1行に固定。溢れたら横スクロール（wrap禁止）
-  # ・ボタン/フォント/余白はCSSカスタムプロパティで一括調整
-  # ・ダーク/ライトは prefers-color-scheme に追従
-  # ・index.html を経由せず単体で動作
-  # ・下部バーのボタンは記号中心、白抜きで視認性UP
-  # ・Listボタンで左側スライドパネル（ページリスト）を開閉
-========================================================= */
-
-:root{
-  /* # ここを調整すると全体の密度が変わります */
-  --pad: 12px;
-  --wrap-max: 880px;
-
-  /* # 上部ツールバーの高さ/ボタンサイズ */
-  --top-btn-h: 34px;         /* ← 上部ボタンの高さ */
-  --top-btn-px: 10px;        /* ← 上部ボタンの左右パディング */
-
-  /* # 下部ナビのボタンサイズ（学習者向け調整ポイント） */
-  --nav-btn-h: 48px;         /* ← 下のボタン高さを変更 */
-  --nav-btn-w: 120px;        /* ← 左右の大きさ（前/次） */
-  --nav-icon-size: 18px;     /* ← 記号の見た目サイズ */
-
-  --radius: 12px;
-  --card-min-h: 240px;
-}
-
-@media (prefers-color-scheme: dark){
+  /* ===== コンセプト / 学習者向け調整点 =====
+     # 下部ボタンのサイズは --foot-btn-fz と --foot-btn-pad を変えるだけで調整できます
+     # iPhone など幅が狭い時は自動で少し小さくなります（@media の下）
+     # フッター高さは --foot-h。本文余白は自動計算でフッターに隠れません
+  */
+  *{box-sizing:border-box}
   :root{
-    --bg: #0f1216;
-    --panel: #1a1f26;
-    --border: #2c3440;
-    --text: #e6ebf3;
-    --muted: #9aa7b3;
-    --accent: #2d6cdf;
+    --pad:14px;
+    --foot-btn-fz:18px;        /* #ここを変えると下部ボタンの文字サイズが変わります */
+    --foot-btn-pad:10px 18px;  /* #ここを変えると下部ボタンのパディングが変わります */
+    --foot-h:82px;             /* #フッターの高さ（本文の下余白計算に使用） */
+    --foot-border:#5e6a75;     /* #下ボタン枠の色（明るいグレー） */
+    --foot-text:#ffffff;       /* #下ボタンの文字色（白抜き） */
   }
-}
-@media (prefers-color-scheme: light){
-  :root{
-    --bg: #f6f7f9;
-    --panel: #ffffff;
-    --border: #dfe3ea;
-    --text: #0a0d14;
-    --muted: #5a6776;
-    --accent: #2d6cdf;
+
+  @media (max-width: 480px){
+    :root{
+      --foot-btn-fz:16px;
+      --foot-btn-pad:10px 16px;
+      --foot-h:74px;
+    }
   }
-}
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  padding-bottom: calc(var(--nav-btn-h) + 22px);
-}
+  @media (prefers-color-scheme: dark){
+    body{background:#0f1115;color:#e6e6e6}
+    header, footer.nav{background:#12151b;border-color:#2a2f36}
+    .card{background:#10151b;border-color:#2a2f36;box-shadow:none}
+    a.inline{color:#89b4ff}
+  }
 
-/* ------- 上部バー（1行固定 & 横スクロール） ------- */
-header{
-  position:sticky; top:0; z-index:20;
-  background:var(--panel);
-  border-bottom:1px solid var(--border);
-}
-.toolbar{
-  display:flex; align-items:center; gap:10px;
-  padding:8px var(--pad);
-  overflow-x:auto; white-space:nowrap; scrollbar-width:none;
-}
-.toolbar::-webkit-scrollbar{display:none}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;
+       padding-bottom:calc(var(--foot-h) + env(safe-area-inset-bottom));}
 
-/* 左・中・右の3グループ（両端寄せ） */
-.toolbar-row{
-  display:flex; align-items:center; gap:10px;
-  width:100%;
-}
-.toolbar-left, .toolbar-center, .toolbar-right{
-  display:flex; align-items:center; gap:10px;
-}
-.toolbar-left{ min-width:0 }
+  /* 上：ページ名（小さく） */
+  .pagename{position:sticky;top:0;z-index:20;font-size:12px;opacity:.8;background:transparent;
+            padding:4px var(--pad) 0}
 
-/* タイトルとカウントはコンパクトに */
-#title{font-size:16px; font-weight:600; margin:0}
-.count{opacity:.7; font-size:14px}
+  header{position:sticky;top:14px;background:#fff;border-bottom:1px solid #ddd;padding:8px var(--pad);z-index:15}
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;overflow:auto;padding-bottom:2px}
+  .topbar::-webkit-scrollbar{display:none}
 
-/* ボタン/セレクトのベース */
-.btn, select{
-  height:var(--top-btn-h);
-  padding:0 var(--top-btn-px);
-  border:1px solid var(--border);
-  background:transparent;
-  color:var(--text);
-  border-radius:10px;
-  font-size:14px;
-}
-.btn:hover{border-color:var(--muted)}
-.btn-primary{border-color:var(--accent)}
-.btn-small{height:var(--top-btn-h); padding:0 10px}
-select{appearance:auto; background:var(--panel)}
+  /* 小さめボタン */
+  .btn{border:1px solid #475164;background:transparent;color:#cfd7e3;border-radius:12px;padding:6px 12px;
+       font-size:14px;line-height:1;cursor:pointer;user-select:none}
+  .btn:active{transform:translateY(1px)}
+  .btn-plain{border-color:#475164}
+  .count{margin-left:auto;opacity:.8;white-space:nowrap}
 
-/* 短ラベルのチェック群（見/非/OK） */
-.chk{
-  display:inline-flex; align-items:center; gap:6px;
-  font-size:14px; color:var(--muted);
-}
-.chk input{width:16px;height:16px}
+  /* コンパクトチェック */
+  .ck{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .ck input{width:18px;height:18px}
+  .ck small{font-size:13px;opacity:.9}
 
-/* ------- 左サイドのページリスト（スライド） ------- */
-.side{
-  position:fixed; inset:0 auto 0 0; width:min(320px, 88vw);
-  background:var(--panel); border-right:1px solid var(--border);
-  transform:translateX(-100%); transition:transform .22s ease;
-  z-index:30; display:flex; flex-direction:column;
-}
-.side.open{ transform:none }
-.side-head{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:8px var(--pad); border-bottom:1px solid var(--border);
-  font-weight:600;
-}
-.side-body{padding:10px; overflow:auto}
+  /* セレクト（“表”ラベルは無し） */
+  select{font-size:14px;padding:6px 22px 6px 8px;border-radius:12px;border:1px solid #475164;background:transparent;color:inherit}
 
-/* 50件ごとのショートカットセレクト */
-#jumpSelect{ width:100%; margin:0 0 8px 0; }
+  .wrap{max-width:980px;margin:0 auto;padding:0 var(--pad) 14px}
+  .card{border:1px solid #ddd;border-radius:14px;padding:16px;margin-top:10px;min-height:200px}
+  .front{font-size:36px;font-weight:800;letter-spacing:.2px}
+  .back .section{margin:12px 0}
+  .sec-title{font-size:12px;opacity:.65;margin:0 0 4px}
+  .sec-body{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  audio,video{width:100%;margin:8px 0}
+  img.cardimg{width:100%;height:auto;border:1px solid #2a2f36;border-radius:10px;object-fit:contain;background:#0c0f12;margin:8px 0;max-height:460px}
+  .muted{opacity:.72}
 
-/* 単語リスト */
-.word{
-  padding:8px 10px; border-radius:8px;
-  border:1px solid transparent;
-  display:flex; align-items:center; justify-content:space-between;
-  gap:10px; cursor:pointer;
-}
-.word:hover{ background-color:rgba(125,140,160,.08) }
-.word.active{
-  border-color:var(--accent); background:rgba(45,108,223,.08);
-}
-.word.learned{ opacity:.45 } /* 覚えた=グレーアウト */
+  /* 下ナビ */
+  footer.nav{
+    position:fixed;left:0;right:0;bottom:0;background:#0f1318;border-top:1px solid #2a2f36;
+    padding:10px calc(var(--pad) + env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) calc(var(--pad) + env(safe-area-inset-right));
+    display:flex;gap:10px;justify-content:center;flex-wrap:nowrap;z-index:30
+  }
+  .nav button{
+    font-size:var(--foot-btn-fz); padding:var(--foot-btn-pad);
+    color:var(--foot-text); background:transparent; border:2px solid var(--foot-border);
+    border-radius:14px; touch-action:manipulation; -webkit-user-select:none; user-select:none
+  }
+  .nav button:active{transform:translateY(1px)}
 
-/* ------- カード本体 ------- */
-.wrap{max-width:var(--wrap-max); margin:0 auto; padding:var(--pad)}
-.card{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:var(--pad);
-  min-height:var(--card-min-h);
-  box-shadow: 0 8px 28px rgba(0,0,0,.18);
-}
-.front{font-size:38px; font-weight:800; letter-spacing:.3px}
-.back .section{margin:12px 0}
-.sec-title{font-size:12px; opacity:.65; margin:0 0 4px}
-.sec-body{font-size:16px; line-height:1.7; white-space:pre-wrap; word-break:break-word}
-img.cardimg{width:100%; height:auto; border:1px solid var(--border); border-radius:10px; object-fit:contain; background:#0002; margin:8px 0; max-height:420px}
-.muted{opacity:.65}
-
-/* ------- 下部ナビ（1行固定 & 白抜き） ------- */
-footer.nav{
-  position:fixed; left:0; right:0; bottom:0; z-index:15;
-  background:var(--panel); border-top:1px solid var(--border);
-  padding:10px var(--pad);
-}
-.nav-row{
-  display:flex; align-items:center; justify-content:center; gap:10px;
-  overflow-x:auto; white-space:nowrap;
-}
-.nav-btn{
-  height:var(--nav-btn-h); min-width:var(--nav-btn-w);
-  border:2px solid rgba(255,255,255,.7);
-  color:#fff; background:transparent; border-radius:12px;
-  font-size:16px; display:inline-flex; align-items:center; justify-content:center;
-}
-.nav-btn:active{ transform:translateY(1px) }
-.nav-icon{
-  font-size:var(--nav-icon-size); line-height:1; padding:0 12px;
-  min-width: calc(var(--nav-btn-h) + 8px);
-}
-
-/* YouTube 埋め込み */
-.yt{position:relative;width:100%;aspect-ratio:16/9}
-.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.yt-fallback{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#000}
-.yt-fallback img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.1)}
-.yt-fallback a.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;font-weight:700;background:linear-gradient(transparent, rgba(0,0,0,.35))}
-.yt-fallback .hint{position:absolute;right:8px;bottom:8px;font-size:12px;color:#fff;background:rgba(0,0,0,.5);padding:3px 6px;border-radius:6px}
-a.inline{word-break:break-all;color:#6ea8ff;text-decoration:none}
-a.inline:hover{text-decoration:underline}
+  /* YouTube fallbackなど */
+  a.inline{word-break:break-all;color:#0066cc;text-decoration:none}
+  a.inline:hover{text-decoration:underline}
+  .yt{position:relative;width:100%;aspect-ratio:16/9}
+  .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .yt-fallback{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid #2a2f36;background:#000}
+  .yt-fallback img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.1)}
+  .yt-fallback a.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;font-weight:700;background:linear-gradient(transparent, rgba(0,0,0,.35))}
+  .yt-fallback .hint{position:absolute;right:8px;bottom:8px;font-size:12px;color:#fff;background:rgba(0,0,0,.5);padding:3px 6px;border-radius:6px}
 </style>
 </head>
-
 <body>
 
-<!-- ===== 左スライド：ページリスト ===== -->
-<aside id="side" class="side" aria-hidden="true">
-  <div class="side-head">
-    <div>ページリスト</div>
-    <button class="btn btn-small" id="closeList">閉じる</button>
-  </div>
-  <div class="side-body">
-    <!-- # 50件ごとのショートカット / 見出し追加も入る -->
-    <select id="jumpSelect"></select>
-    <div id="wordList"></div>
-  </div>
-</aside>
+<div class="pagename" id="pagename"></div>
 
-<!-- ===== 上部ツールバー（1行固定） ===== -->
 <header>
-  <div class="toolbar">
-    <div class="toolbar-row">
-      <div class="toolbar-left">
-        <h1 id="title" style="font-size:16px; margin:0">Card</h1>
-        <div class="count" id="count">0/0</div>
-      </div>
+  <div class="topbar">
+    <label class="ck"><input type="checkbox" id="mixChk"><small>交</small></label>
+    <label class="ck"><input type="checkbox" id="headlineAdd"><small>見</small></label>
+    <label class="ck"><input type="checkbox" id="hideLearned" checked><small>非</small></label>
+    <label class="ck"><input type="checkbox" id="learnedChkTop"><small>OK</small></label>
 
-      <div class="toolbar-center">
-        <button class="btn btn-small btn-primary" id="listBtn">List</button>
-        <button class="btn btn-small" id="topBtn" onclick="location.href='index.html'">Top</button>
-      </div>
+    <button class="btn btn-plain" id="listBtn">List</button>
+    <button class="btn btn-plain" id="topBtn">Top</button>
 
-      <div class="toolbar-right" style="margin-left:auto">
-        <!-- “表”のテキストは削除してセレクトのみ -->
-        <select id="frontSelect" title="表にする列"></select>
-        <label class="chk" title="見出しにする"><input type="checkbox" id="markHead"> 見</label>
-        <label class="chk" title="覚えた項目を非表示"><input type="checkbox" id="hideLearned" checked> 非</label>
-        <label class="chk" title="このカードを覚えた"><input type="checkbox" id="learnedChkTop"> OK</label>
-      </div>
-    </div>
+    <select id="frontSelect"></select>
+
+    <div class="count" id="count">0 / 0</div>
   </div>
 </header>
 
-<!-- ===== カード領域 ===== -->
 <div class="wrap">
   <div class="card" id="card">
     <div id="front" class="front">読み込み中…</div>
@@ -244,38 +122,35 @@ a.inline:hover{text-decoration:underline}
       <div id="backContainer"></div>
     </div>
   </div>
+
+  <!-- 下に出る各種エラーメッセージ/補助リンクがフッターに隠れないようマージンで逃がす -->
+  <div id="underHint" style="height:24px"></div>
 </div>
 
-<!-- ===== 下部ナビ（記号のみ / 白抜き） ===== -->
 <footer class="nav">
-  <!--
-    # 下部ボタンサイズの調整方法
-    # ・高さ        : --nav-btn-h
-    # ・横幅(前/次) : --nav-btn-w
-    # ・アイコンサイズ: --nav-icon-size
-    # これらは :root セクションの数値を書き換えてください。
-  -->
-  <div class="nav-row">
-    <button id="prevBtn" class="nav-btn" aria-label="前">◀ 前</button>
-    <button id="nextBtn" class="nav-btn" aria-label="次">次 ▶</button>
-    <button id="shuffleBtn" class="nav-btn nav-icon" aria-label="シャッフル">🔀</button>
-    <button id="pauseBtn" class="nav-btn nav-icon" aria-label="一時停止">⏸</button>
-  </div>
+  <button id="prevBtn">◀ 前</button>
+  <button id="nextBtn">次 ▶</button>
 </footer>
 
 <script>
-/* ================== 設定 ================== */
+/* ===== コンセプト / 説明 =====
+   # 「交」… rowsView の順番を固定シャッフルに切替（ON/OFFで順を作り直す）
+   # 「見」…現在の単語を“見出しリスト”に追加。Listパネルのショートカットにも出る想定（パネル実装側で利用）
+   # 「非」…覚えた単語を非表示
+   # 「OK」…現在カードの学習済みトグル
+   # Top / List … 任意ページへの導線（indexを経由しない想定でもそのまま）
+*/
+
 const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
 const SOZAI_BASE_URL = API_URL + "sozai/";
 const FRONT_PREFER = ["英単語","単語","word","Word"];
 const YT_MODE = (location.protocol === "file:") ? "link" : "auto";
-/* ========================================= */
 
 const SHEET = new URLSearchParams(location.search).get("sheet") || "";
-document.getElementById("title").textContent = SHEET || "Card";
+document.getElementById("pagename").textContent = SHEET || "";
+
 const KEY_PREFIX = `cards:${SHEET}:`;
 const FRONT_STORE_KEY = `cards:${SHEET}:frontCol`;
-
 const getKey  = w => KEY_PREFIX + w;
 const isLearn = w => localStorage.getItem(getKey(w)) === "1";
 const setLearn = (w,v) => v ? localStorage.setItem(getKey(w),"1") : localStorage.removeItem(getKey(w));
@@ -283,6 +158,7 @@ const setLearn = (w,v) => v ? localStorage.setItem(getKey(w),"1") : localStorage
 let rowsAll = [];
 let headers = [];
 let rowsView = [];
+let order = [];       // 表示順（交=ONならシャッフル固定）
 let idx = 0;
 let showBack = false;
 let lastAudio = null;
@@ -296,20 +172,22 @@ const el = {
   hide: $("hideLearned"),
   frontSel: $("frontSelect"),
   count: $("count"),
-  side: $("side"),
-  listBtn: $("listBtn"),
-  closeList: $("closeList"),
-  wordList: $("wordList"),
-  jump: $("jumpSelect"),
-  markHead: $("markHead")
+  mix: $("mixChk"),
+  headline: $("headlineAdd")
 };
 
-/* ---------- ヘルパー ---------- */
+// 省略 sozai → GCS
 function hasExt(u){ return /\.[a-z0-9]{2,5}(\?|$)/i.test(u||""); }
-function isLocalLike(u){ if(!u) return false; if(/^https?:\/\//i.test(u)) return false; if(/^data:/i.test(u)) return false; return true; }
+function isLocalLike(u){
+  if(!u) return false;
+  if(/^https?:\/\//i.test(u)) return false;
+  if(/^data:/i.test(u)) return false;
+  return true;
+}
 function resolveSozaiPath(u){
   if(!u) return "";
-  let s = String(u).trim(); if(!s) return s;
+  let s = String(u).trim();
+  if(!s) return s;
   s = s.replace(/^[\s,;:()［］【】「」『』“”'"。．、]+|[\s,;:()［］【】「」『』“”'"。．、]+$/g, "");
   if(!isLocalLike(s)) return s;
   if(s.includes("sozai/")) s = s.split("/").pop();
@@ -318,74 +196,125 @@ function resolveSozaiPath(u){
   }
   return s;
 }
+
 function isVideoUrl(u){ return /\.(mp4|webm|ogg|mkv)(\?|$)/i.test(u||""); }
 function isAudioUrl(u){ return /\.(mp3|m4a|aac|wav|ogg|opus)(\?|$)/i.test(u||""); }
 function isHttpUrl(u){ return /^https?:\/\//i.test(u || ""); }
-function baseName(u){ try{ const x=(u||"").split("#")[0].split("?")[0]; return x.split("/").pop()||x; }catch(_){ return u; } }
+function baseName(u){
+  try{ const x=(u||"").split("#")[0].split("?")[0]; return x.split("/").pop() || x; }
+  catch(_){ return u; }
+}
 function isYouTubeUrl(u){ return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(u||""); }
-function parseYouTubeId(u){ if(!u) return null; const m=u.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/); return m?m[1]:null; }
+function parseYouTubeId(u){ const m = (u||"").match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/); return m?m[1]:null; }
 function parseStartSeconds(u){
   try{
     const url=new URL(u, location.origin);
     const t=url.searchParams.get("t"), start=url.searchParams.get("start");
-    const toSec=str=>{
-      if(!str) return 0;
-      if(/^\d+$/.test(str)) return parseInt(str,10);
-      let sec=0; const m=str.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
+    const toSec = s=>{
+      if(!s) return 0;
+      if(/^\d+$/.test(s)) return +s;
+      let sec=0; const m=s.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
       if(m){ if(m[1]) sec+=+m[1]*3600; if(m[2]) sec+=+m[2]*60; if(m[3]) sec+=+m[3]; }
       return sec;
     };
-    return start ? toSec(start) : toSec(t);
+    return start?toSec(start):toSec(t);
   }catch{ return 0; }
 }
 function ytEmbedUrl(u){
   const id=parseYouTubeId(u); if(!id) return "";
-  const start=parseStartSeconds(u); const params=new URLSearchParams();
-  if(start) params.set("start", String(start));
-  params.set("modestbranding","1"); params.set("rel","0"); params.set("playsinline","1");
-  return `https://www.youtube-nocookie.com/embed/${id}${params.toString()?"?"+params.toString():""}`;
+  const start=parseStartSeconds(u);
+  const p=new URLSearchParams(); if(start) p.set("start",String(start));
+  p.set("modestbranding","1"); p.set("rel","0"); p.set("playsinline","1");
+  return `https://www.youtube-nocookie.com/embed/${id}${p.toString()?"?"+p.toString():""}`;
 }
-function ytWatchUrl(u){ const id=parseYouTubeId(u); if(!id) return u; const start=parseStartSeconds(u); const p=new URLSearchParams(); p.set("v",id); if(start) p.set("t",String(start)); return `https://www.youtube.com/watch?${p.toString()}`; }
+function ytWatchUrl(u){
+  const id=parseYouTubeId(u); if(!id) return u;
+  const start=parseStartSeconds(u); const p=new URLSearchParams(); p.set("v",id); if(start)p.set("t",String(start));
+  return `https://www.youtube.com/watch?${p.toString()}`;
+}
 function ytThumbUrl(u){ const id=parseYouTubeId(u); return id?`https://i.ytimg.com/vi/${id}/hqdefault.jpg`:""; }
-function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u||""); }
-function getGooglePhotosDirectUrl(url){ const m=url.match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/); if(m) return `https://lh3.googleusercontent.com/pw/${m[1]}=w800`; return url; }
+
+function extractGooglePhotosId(url){
+  const m1 = (url||"").match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/); if(m1) return m1[1];
+  const m2 = (url||"").match(/photos\.app\.goo\.gl\/([A-Za-z0-9]+)/); if(m2) return m2[1];
+  return null;
+}
+function getGooglePhotosDirectUrl(url){
+  const id = extractGooglePhotosId(url);
+  if(id && id.startsWith("AF1Qip")) return `https://lh3.googleusercontent.com/pw/${id}=w800`;
+  return url;
+}
+function normalizeDrive(u){
+  if(!u) return "";
+  const first = String(u).trim().split(/[\s\n]+/)[0];
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/,
+    /drive\.google\.com\/open\?id=([A-Za-z0-9_-]{10,})/,
+    /docs\.google\.com\/.*?\/d\/([A-Za-z0-9_-]{10,})/,
+    /drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]{10,})/
+  ];
+  for(const p of patterns){
+    const m = first.match(p);
+    if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  }
+  if(first.includes("/uc?export=download&id=")) return first;
+  return first;
+}
+function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u || ""); }
 function isImageUrl(u){
-  if(!u) return false; const lower=u.toLowerCase();
-  return /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(lower)
-      || lower.includes("googleusercontent.com")
-      || lower.includes("/uc?export=download&id=")
-      || lower.includes("lh3.google")
-      || lower.includes("imgur.com")
-      || lower.includes("gyazo.com");
+  if(!u) return false;
+  const lower = u.toLowerCase();
+  if(/\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(lower)) return true;
+  if(lower.includes("googleusercontent.com")) return true;
+  if(lower.includes("/uc?export=download&id=")) return true;
+  if(lower.includes("lh3.google")) return true;
+  if(lower.includes("imgur.com")) return true;
+  if(lower.includes("gyazo.com")) return true;
+  return false;
 }
 function urlize(text){
-  const re=/(https?:\/\/[^\s]+)/g, frag=document.createDocumentFragment(); let last=0,m;
-  while((m=re.exec(text))!==null){
+  const re=/(https?:\/\/[^\s]+)/g; const frag=document.createDocumentFragment();
+  let last=0,m; while((m=re.exec(text))!==null){
     if(m.index>last) frag.append(document.createTextNode(text.slice(last,m.index)));
-    const a=document.createElement("a"); a.href=m[0]; a.textContent=m[0]; a.target="_blank"; a.rel="noopener"; a.className="inline"; frag.append(a);
-    last=re.lastIndex;
+    const a=document.createElement("a"); a.href=m[0]; a.textContent=m[0]; a.target="_blank"; a.rel="noopener"; a.className="inline";
+    frag.append(a); last=re.lastIndex;
   }
   if(last<text.length) frag.append(document.createTextNode(text.slice(last)));
   return frag;
 }
+
 function pickInitialFront(headers){
-  const saved=localStorage.getItem(FRONT_STORE_KEY);
+  const saved = localStorage.getItem(FRONT_STORE_KEY);
   if(saved && headers.includes(saved)) return saved;
   for(const c of FRONT_PREFER){ if(headers.includes(c)) return c; }
-  return headers[0]||"";
+  return headers[0] || "";
 }
 
-/* ---------- ビュー再構築 & レンダ ---------- */
+/* 表示対象 rowsView と order を構築 */
 function rebuildView(){
-  const frontKey=el.frontSel.value;
-  rowsView = rowsAll.filter(row=>{
-    const frontVal=String(row[frontKey]??"");
+  const frontKey = el.frontSel.value;
+  rowsView = rowsAll.filter(row => {
+    const frontVal = String(row[frontKey] ?? "");
     return el.hide.checked ? !isLearn(frontVal) : true;
   });
-  if(rowsView.length===0) idx=0; else if(idx>=rowsView.length) idx=rowsView.length-1;
-  el.count.textContent = `${rowsView.length?idx+1:0} / ${rowsView.length}`;
-  buildList(); // 左のリストも更新
+  buildOrder();
+  if(order.length===0) idx=0;
+  else if(idx >= order.length) idx = order.length - 1;
+
+  el.count.textContent = `${order.length ? idx+1 : 0} / ${order.length}`;
 }
+
+/* 交：順序の管理（固定シャッフル or 昇順） */
+function buildOrder(){
+  order = rowsView.map((_,i)=>i);
+  if(el.mix.checked){
+    for(let i=order.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [order[i],order[j]]=[order[j],order[i]];
+    }
+  }
+}
+
 function renderYouTube(sec, urlOriginal){
   const embed=ytEmbedUrl(urlOriginal), watch=ytWatchUrl(urlOriginal), thumb=ytThumbUrl(urlOriginal);
   if(YT_MODE==="link" || !embed){
@@ -405,18 +334,23 @@ function renderYouTube(sec, urlOriginal){
   under.appendChild(link);
   box.appendChild(iframe); sec.appendChild(box); sec.appendChild(under);
 }
+
 function renderBack(row){
   el.backBox.innerHTML="";
   const frontKey=el.frontSel.value;
+
   headers.forEach(key=>{
     if(key===frontKey) return;
-    const raw=row[key]; if(!raw) return;
+    const raw=row[key];
+    if(!raw) return;
+
     const sec=document.createElement("div"); sec.className="section";
     const title=document.createElement("p"); title.className="sec-title"; title.textContent=key; sec.appendChild(title);
 
     const val=String(raw).trim();
-    const tokens=val.split(/[\n,、]+|\t+/).map(s=>s.trim()).filter(Boolean);
-    let hasMedia=false; let remainingText=val;
+    const tokens = val.split(/[\n,、]+|\t+/).map(s=>s.trim()).filter(Boolean);
+
+    let hasMedia=false, remainingText=val;
 
     tokens.forEach(tok=>{
       if(!tok) return;
@@ -428,17 +362,18 @@ function renderBack(row){
         img.onerror=function(){ this.style.display='none'; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
         sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
-      if(isHttpUrl(resolved)) resolved = resolved.replace(/\/file\/d\/([A-Za-z0-9_-]{10,}).*$/, "https://drive.google.com/uc?export=download&id=$1");
+      if(isHttpUrl(resolved)) resolved=normalizeDrive(resolved);
 
       if(isImageUrl(resolved)){
         const img=document.createElement("img"); img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
-        img.onerror=function(){ this.style.display="none"; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
+        img.onerror=function(){ this.style.display='none'; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
         sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
       if(isAudioUrl(resolved)){
         const audio=document.createElement("audio"); audio.controls=true; audio.src=resolved;
         audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
-        sec.appendChild(audio); const cap=document.createElement("div"); cap.className="muted"; cap.textContent=baseName(resolved); sec.appendChild(cap);
+        sec.appendChild(audio);
+        const cap=document.createElement("div"); cap.className="muted"; cap.textContent=baseName(resolved); sec.appendChild(cap);
         hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
       if(isVideoUrl(resolved)){
@@ -459,136 +394,98 @@ function renderBack(row){
     el.backBox.appendChild(sec);
   });
 }
+
 function render(){
-  if(rowsView.length===0){
+  if(order.length===0){
     el.front.textContent="表示できるカードがありません";
     el.back.style.display="none"; el.front.style.display="block";
     el.learnedTop.checked=false; el.count.textContent=`0 / 0`; return;
   }
-  const frontKey=el.frontSel.value; const row=rowsView[idx];
+  const frontKey=el.frontSel.value;
+  const row=rowsView[order[idx]];
   const frontText=String(row[frontKey]??"(no value)");
-  if(showBack){ el.front.style.display="none"; el.back.style.display="block"; renderBack(row); el.learnedTop.checked=isLearn(frontText); }
-  else{ el.back.style.display="none"; el.front.style.display="block"; el.front.textContent=frontText; }
-  el.count.textContent=`${idx+1} / ${rowsView.length}`;
-}
-
-/* ---------- 左リストの生成 ---------- */
-function buildList(){
-  // ショートカット（50件ごと＋見出しマーク分）
-  el.jump.innerHTML = "";
-  const frKey = el.frontSel.value || (headers[0]||"");
-  const options = [];
-  for(let i=0;i<rowsAll.length;i+=50){
-    const label = `No.${i+1}: ${String(rowsAll[i][frKey]??"")}`;
-    options.push({i,label});
+  if(showBack){
+    el.front.style.display="none"; el.back.style.display="block";
+    renderBack(row);
+    el.learnedTop.checked=isLearn(frontText);
+  }else{
+    el.back.style.display="none"; el.front.style.display="block";
+    el.front.textContent=frontText;
   }
-  // 手動見出し
-  const savedHeads = JSON.parse(localStorage.getItem(KEY_PREFIX+"heads")||"[]");
-  savedHeads.forEach(obj=>{
-    if(obj.sheet===SHEET && obj.index>=0 && obj.index<rowsAll.length){
-      const label = `★ ${obj.index+1}: ${String(rowsAll[obj.index][frKey]??"")}`;
-      options.push({i:obj.index,label});
-    }
-  });
-  options.sort((a,b)=>a.i-b.i);
-  options.forEach(o=>{
-    const opt=document.createElement("option");
-    opt.value=o.i; opt.textContent=o.label; el.jump.appendChild(opt);
-  });
-
-  // 単語リスト
-  el.wordList.innerHTML="";
-  rowsAll.forEach((row,i)=>{
-    const w = String(row[frKey]??"");
-    const div=document.createElement("div");
-    div.className="word"+(isLearn(w)?" learned":"")+(rowsView[idx] && rowsView[idx][frKey]===w?" active":"");
-    div.textContent = `${i+1}. ${w}`;
-    div.addEventListener("click", ()=>{
-      // 表示対象の rowsView 上のインデックスへ移動
-      const targetIndex = rowsView.findIndex(r => String(r[frKey]??"") === w);
-      if(targetIndex>=0){ idx=targetIndex; showBack=false; render(); }
-      el.side.classList.remove("open");
-    });
-    el.wordList.appendChild(div);
-  });
+  el.count.textContent=`${idx+1} / ${order.length}`;
 }
 
-/* ---------- データ取得 ---------- */
+/* ナビ（表裏は1セット扱い） */
+function next(){
+  if(!order.length) return;
+  if(!showBack){ showBack=true; render(); }
+  else{ showBack=false; idx=(idx+1)%order.length; render(); }
+}
+function prev(){
+  if(!order.length) return;
+  if(showBack){ showBack=false; render(); }
+  else{ showBack=true; idx=(idx-1+order.length)%order.length; render(); }
+}
+
+/* データ取得 */
 async function load(){
   try{
-    if(!SHEET){ el.front.textContent="URLに ?sheet=シート名 を指定してください"; return; }
+    if (!SHEET) { el.front.textContent = "URLに ?sheet=シート名 を指定してください"; return; }
     const jsonUrl = API_URL + encodeURIComponent(SHEET) + ".json";
     const res = await fetch(jsonUrl, {cache:"no-store"});
-    if(!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
+    if (!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
+
     const data = await res.json();
-    rowsAll = data; headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
+    rowsAll = data;
+    headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
 
-    el.frontSel.innerHTML="";
-    headers.forEach(k=>{ const opt=document.createElement("option"); opt.value=k; opt.textContent=k; el.frontSel.appendChild(opt); });
-    const initial = localStorage.getItem(FRONT_STORE_KEY) || pickInitialFront(headers);
-    el.frontSel.value = initial; localStorage.setItem(FRONT_STORE_KEY, initial);
+    el.frontSel.innerHTML = "";
+    headers.forEach(k => {
+      const opt=document.createElement("option"); opt.value=k; opt.textContent=k; el.frontSel.appendChild(opt);
+    });
 
-    rebuildView(); idx=0; showBack=false; render();
-  }catch(e){ el.front.textContent=`取得エラー: ${e.message}`; console.error(e); }
+    const initial = pickInitialFront(headers);
+    el.frontSel.value = initial;
+    localStorage.setItem(FRONT_STORE_KEY, initial);
+
+    rebuildView();
+    idx = 0;
+    showBack = false;
+    render();
+
+  } catch(e){
+    el.front.textContent = `取得エラー: ${e.message}`;
+    console.error(e);
+  }
 }
 
-/* ---------- ナビ操作 ---------- */
-function next(){ if(!rowsView.length) return; if(!showBack){showBack=true;render();}else{idx=(idx+1)%rowsView.length;showBack=false;render();} }
-function prev(){ if(!rowsView.length) return; if(showBack){showBack=false;render();}else{idx=(idx-1+rowsView.length)%rowsView.length;showBack=true;render();} }
-
-/* ---------- イベント ---------- */
-el.learnedTop.addEventListener("change",(ev)=>{
-  if(!rowsView.length) return;
-  const w = String(rowsView[idx][el.frontSel.value] ?? "");
+/* イベント */
+el.learnedTop.addEventListener("change", (ev) => {
+  if(!order.length) return;
+  const w = String(rowsView[order[idx]][el.frontSel.value] ?? "");
   setLearn(w, ev.target.checked);
-  if(el.hide.checked){ rebuildView(); if(idx>=rowsView.length) idx=0; }
+  if(el.hide.checked){
+    const currentWord = w;
+    rebuildView();
+    // 可能なら同じ単語位置に合わせ直す
+    const newIndex = rowsView.findIndex(r => String(r[el.frontSel.value] ?? "") === currentWord);
+    if(newIndex >= 0) idx = Math.max(0, order.indexOf(newIndex));
+    else idx = 0;
+  }
   render();
 });
 el.hide.addEventListener("change", ()=>{ rebuildView(); render(); });
-el.frontSel.addEventListener("change", ()=>{ localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value); rebuildView(); showBack=false; render(); });
+el.mix.addEventListener("change", ()=>{ buildOrder(); idx=0; showBack=false; render(); });
+el.frontSel.addEventListener("change", ()=>{ localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value); rebuildView(); showBack=false; idx=0; render(); });
 
 $("prevBtn").addEventListener("click", prev);
 $("nextBtn").addEventListener("click", next);
-$("shuffleBtn").addEventListener("click", ()=>{
-  for(let i=rowsView.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [rowsView[i],rowsView[j]]=[rowsView[j],rowsView[i]]; }
-  idx=0; showBack=false; render();
-});
-$("pauseBtn").addEventListener("click", ()=>{ if(lastAudio) lastAudio.pause(); });
 
-/* キーボード（説明はトップに集約想定） */
-document.addEventListener("keydown",(e)=>{
-  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA") return;
-  if(e.key==="ArrowRight") next();
-  else if(e.key==="ArrowLeft") prev();
-  else if(e.key.toLowerCase()==="l"){ el.learnedTop.checked=!el.learnedTop.checked; el.learnedTop.dispatchEvent(new Event("change")); }
-});
+/* 二回タップ拡大抑止：ボタンは十分なfont-size + touch-action:manipulation で対策済み */
 
-/* List スライド */
-el.listBtn.addEventListener("click", ()=>{ el.side.classList.add("open"); });
-el.closeList.addEventListener("click", ()=>{ el.side.classList.remove("open"); });
-el.jump.addEventListener("change", ()=>{
-  const frKey=el.frontSel.value; const n=parseInt(el.jump.value||"0",10);
-  const w = String((rowsAll[n]||{})[frKey] ?? "");
-  const targetIndex = rowsView.findIndex(r => String(r[frKey]??"") === w);
-  if(targetIndex>=0){ idx=targetIndex; showBack=false; render(); }
-  el.side.classList.remove("open");
-});
-
-/* 見出しにする：現在カードのインデックスを保存 */
-el.markHead.addEventListener("change", (e)=>{
-  if(!rowsView.length) return;
-  const currentWord = String(rowsView[idx][el.frontSel.value] ?? "");
-  const absoluteIndex = rowsAll.findIndex(r => String(r[el.frontSel.value] ?? "") === currentWord);
-  if(absoluteIndex<0) return;
-  let heads = JSON.parse(localStorage.getItem(KEY_PREFIX+"heads")||"[]");
-  if(e.target.checked){
-    heads.push({sheet:SHEET, index:absoluteIndex});
-  }else{
-    heads = heads.filter(h => !(h.sheet===SHEET && h.index===absoluteIndex));
-  }
-  localStorage.setItem(KEY_PREFIX+"heads", JSON.stringify(heads));
-  buildList();
-});
+/* List/Top は必要に応じて遷移先を編集 */
+$("listBtn").addEventListener("click", ()=>{ /* 左パネル表示の実装が別ならここにフック */ });
+$("topBtn").addEventListener("click", ()=>{ location.href="index.html"; });
 
 /* 初期化 */
 load();
