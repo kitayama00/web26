@@ -31,9 +31,7 @@
   /* ▼ ここを変更するとカード部分の文字サイズが変わります（デフォルト1.2=120%） */
   --card-font-scale: 1.2;
 
-  /* ▼ 下フッターボタンの大きさ（2.2倍指定を反映。さらに変えたい場合はここ）
-  
-*/
+  /* ▼ 下フッターボタンの大きさ（2.2倍指定を反映。さらに変えたい場合はここ） */
   --nav-btn-w: 154px;         /* 70px * 2.2 ≒ 154px */
   --nav-btn-h: 48px;          /* 高さも少しだけ増やす */
 }
@@ -43,7 +41,10 @@ html, body { height:100%; }
 body{
   font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
   margin:0; background:#0f1318; color:#e8eaee;
-  padding-bottom:80px;           /* 下ナビ分の余白 */
+
+  /* ▼ 修正：下フッターに隠れないよう、フッター高さ＋安全域ぶんの余白を確保 */
+  padding-bottom: calc(var(--nav-btn-h) + 24px + env(safe-area-inset-bottom));
+
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -118,7 +119,12 @@ a.inline:hover{ text-decoration:underline; }
 
 /* ===== 左サイド（押し出し式） ===== */
 .side{
-  position:fixed; left:0; top:48px; bottom:80px; width:var(--side-w);
+  position:fixed; left:0; top:48px;
+
+  /* ▼ 修正：左サイドの下端もフッター高さに追従（かぶり防止） */
+  bottom: calc(var(--nav-btn-h) + 20px + env(safe-area-inset-bottom));
+
+  width:var(--side-w);
   background:#10151c; border-right:1px solid rgba(255,255,255,.12);
   z-index:25; padding:8px;
   transform: translateX(-100%); transition: transform .2s ease;
@@ -147,7 +153,11 @@ body.side-open .side{ transform:none; }
 /* ===== 下ナビ（グレー枠＋白字） ===== */
 footer.nav{
   position:fixed; left:0; right:0; bottom:0; z-index:24;
+
+  /* ▼ 修正：iPhoneのホームバー分を追加し、重なりを防止 */
   padding:10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+
   background:#0f1318cc; backdrop-filter: blur(4px);
   border-top:1px solid rgba(255,255,255,.12);
   display:flex; gap:12px; justify-content:center;

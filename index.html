@@ -6,27 +6,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   /* =========================================================
-     調整ポイント（ここだけ触ればサイズ感を一括変更できます）
+     調整ポイント（ここだけ触ればサイズ感が決まります）
      ---------------------------------------------------------
-     --wrap-pad    : 画面の左右上下の余白
-     --grid-gap    : ボタン同士の間隔
-     --card-min    : 各ボタンの最小幅。ここを小さくすると列数が増える
-                     例) 100pxならiPhone幅でも原則3列になる想定
-     --card-pad    : ボタンの内側余白
-     --card-radius : ボタンの角丸
-     --card-fz     : ボタン文字サイズ（clampで画面に追従）
+     --wrap-pad  : 画面の余白
+     --grid-gap  : ボタン同士の間隔
+     --card-min  : ボタンの最小幅（小さいほど列数が増える）
+     --card-h    : ボタンの縦高さ（← 縦幅はここを変更）
+     --card-padX : 左右の内側余白（横のゆとり）
+     --card-fz   : 文字サイズ（clampで画面に追従）
   ========================================================= */
   :root{
     color-scheme: light dark;
-    --wrap-pad: 20px;
+    --wrap-pad: 16px;
     --grid-gap: 10px;
-    --card-min: 100px;               /* 3列基準の最小幅 */
-    --card-pad: 10px;                /* 少し小さめに */
-    --card-radius: 12px;
-    --card-fz: clamp(12px, 1.9vw, 18px); /* 画面に応じて自動調整 */
+    --card-min: 98px;                         /* iPhoneでも3列を狙う幅 */
+    --card-h: 40px;                           /* ← 縦幅はココ。例: 36, 44, 48… */
+    --card-padX: 12px;
+    --card-fz: clamp(12px, 1.7vw, 16px);
   }
 
-  /* 色は現状のまま（必要ならここだけ差し替え） */
+  /* カラーテーマ（現状維持） */
   @media (prefers-color-scheme: dark){
     :root{
       --bg:#111; --fg:#ddd;
@@ -50,12 +49,9 @@
     transition:.2s;
   }
 
-  /* 見出しは少し控えめに */
   h1{font-size:22px;margin:0 0 12px}
 
-  /* グリッド
-     auto-fit + minmaxで「可能な限り」横に並ぶ
-     --card-min を100px前後にしておくとスマホでも3列になりやすい */
+  /* グリッド：可能な限り横に並べる */
   #list{
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(var(--card-min), 1fr));
@@ -63,39 +59,37 @@
     align-items:stretch;
   }
 
-  /* ボタン（色は従来どおり、サイズは変数で制御） */
+  /* ボタン */
   a.card{
-    display:block;
-    padding:var(--card-pad);
+    display:flex;                 /* 中身を縦中央に寄せる */
+    align-items:center;
+    height:var(--card-h);         /* ← 縦幅固定（ここで一括変更） */
+    padding:0 var(--card-padX);   /* 上下は0、左右だけ余白 */
     border:1px solid var(--card-border);
-    border-radius:var(--card-radius);
+    border-radius:12px;
     text-decoration:none;
     color:inherit;
     background:var(--card-bg);
     font-size:var(--card-fz);
-    line-height:1.25;
+    line-height:1;                /* 文字の上下余白を抑える */
     transition:.2s;
-    /* 長いタイトルでも1〜2行で収まるように */
+
+    /* 1行固定・改行禁止・はみ出し非表示（省略記号）*/
+    white-space:nowrap;
     overflow:hidden;
-    display:flex; align-items:center;
-    min-height:44px;                 /* タップしやすさ確保 */
-    word-break:keep-all;
-    white-space:normal;
+    text-overflow:ellipsis;
   }
   a.card:hover{ background:var(--card-hover); }
 
-  /* 画面が極端に狭い時の保険（列数が潰れすぎるのを防ぐ） */
+  /* 画面が極端に狭い時の最小幅の保険 */
   @media (max-width:360px){
-    :root{ --card-min: 96px; }
+    :root{ --card-min: 94px; }
   }
-
-  /* 大きい画面では自然に4〜5列以上まで増える
-     さらに詰めたい場合は --card-min を 140px→120px のように調整 */
 </style>
 </head>
 <body>
 <h1>Cards</h1>
-<!-- 説明文は要らないとのことなので削除 -->
+<!-- 説明文は削除 -->
 
 <div id="list">読み込み中…</div>
 
@@ -122,7 +116,7 @@ async function main(){
       // slugがあればslug、なければtitleやnameを使用（従来仕様を維持）
       const slug = obj.slug || obj.title || obj.name;
       a.href = `page.html?sheet=${encodeURIComponent(slug)}`;
-      a.textContent = obj.title || slug;
+      a.textContent = obj.title || slug; // 表示は1行固定・はみ出し非表示（CSSで制御）
       wrap.appendChild(a);
     });
 
