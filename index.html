@@ -5,64 +5,102 @@
 <title>Cards Index</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
+  /* =========================================================
+     調整ポイント（ここだけ触ればサイズ感を一括変更できます）
+     ---------------------------------------------------------
+     --wrap-pad    : 画面の左右上下の余白
+     --grid-gap    : ボタン同士の間隔
+     --card-min    : 各ボタンの最小幅。ここを小さくすると列数が増える
+                     例) 100pxならiPhone幅でも原則3列になる想定
+     --card-pad    : ボタンの内側余白
+     --card-radius : ボタンの角丸
+     --card-fz     : ボタン文字サイズ（clampで画面に追従）
+  ========================================================= */
   :root{
     color-scheme: light dark;
+    --wrap-pad: 20px;
+    --grid-gap: 10px;
+    --card-min: 100px;               /* 3列基準の最小幅 */
+    --card-pad: 10px;                /* 少し小さめに */
+    --card-radius: 12px;
+    --card-fz: clamp(12px, 1.9vw, 18px); /* 画面に応じて自動調整 */
   }
-  body{
-    font-family:sans-serif;
-    margin:0;
-    padding:20px;
-    background:var(--bg);
-    color:var(--fg);
-    transition:.2s;
-  }
+
+  /* 色は現状のまま（必要ならここだけ差し替え） */
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#111;
-      --fg:#ddd;
-      --card-bg:#222;
-      --card-border:#333;
-      --card-hover:#333;
+      --bg:#111; --fg:#ddd;
+      --card-bg:#222; --card-border:#333; --card-hover:#333;
     }
   }
   @media (prefers-color-scheme: light){
     :root{
-      --bg:#fff;
-      --fg:#111;
-      --card-bg:#fafafa;
-      --card-border:#ccc;
-      --card-hover:#f0f0f0;
+      --bg:#fff; --fg:#111;
+      --card-bg:#fafafa; --card-border:#ccc; --card-hover:#f0f0f0;
     }
   }
-  h1{font-size:20px;margin:0 0 12px}
+
+  /* 全体 */
+  body{
+    font-family:sans-serif;
+    margin:0;
+    padding:var(--wrap-pad);
+    background:var(--bg);
+    color:var(--fg);
+    transition:.2s;
+  }
+
+  /* 見出しは少し控えめに */
+  h1{font-size:22px;margin:0 0 12px}
+
+  /* グリッド
+     auto-fit + minmaxで「可能な限り」横に並ぶ
+     --card-min を100px前後にしておくとスマホでも3列になりやすい */
   #list{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
-    gap:10px;
+    grid-template-columns:repeat(auto-fit, minmax(var(--card-min), 1fr));
+    gap:var(--grid-gap);
+    align-items:stretch;
   }
+
+  /* ボタン（色は従来どおり、サイズは変数で制御） */
   a.card{
     display:block;
-    padding:12px;
+    padding:var(--card-pad);
     border:1px solid var(--card-border);
-    border-radius:10px;
+    border-radius:var(--card-radius);
     text-decoration:none;
     color:inherit;
     background:var(--card-bg);
+    font-size:var(--card-fz);
+    line-height:1.25;
     transition:.2s;
+    /* 長いタイトルでも1〜2行で収まるように */
+    overflow:hidden;
+    display:flex; align-items:center;
+    min-height:44px;                 /* タップしやすさ確保 */
+    word-break:keep-all;
+    white-space:normal;
   }
-  a.card:hover{
-    background:var(--card-hover);
+  a.card:hover{ background:var(--card-hover); }
+
+  /* 画面が極端に狭い時の保険（列数が潰れすぎるのを防ぐ） */
+  @media (max-width:360px){
+    :root{ --card-min: 96px; }
   }
-  .small{opacity:.7;font-size:12px}
+
+  /* 大きい画面では自然に4〜5列以上まで増える
+     さらに詰めたい場合は --card-min を 140px→120px のように調整 */
 </style>
 </head>
 <body>
 <h1>Cards</h1>
-<p class="small">スプレッドシートのシート名が自動で並びます。</p>
+<!-- 説明文は要らないとのことなので削除 -->
+
 <div id="list">読み込み中…</div>
 
 <script>
-// Cloud Storage 上の index.json のURL（公開URLを貼る）
+/* Cloud Storage 上の index.json のURL（公開URLを貼る） */
 const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/index.json";
 
 async function main(){
@@ -71,6 +109,7 @@ async function main(){
     const res = await fetch(API_URL, {cache:"no-store"});
     if(!res.ok) throw new Error("Fetch failed: " + res.status);
     const sheets = await res.json(); // 例: [{"slug":"mahjong","title":"麻雀"},...]
+
     wrap.innerHTML = "";
     if(!sheets.length){
       wrap.textContent = "シートが見つかりません。";
@@ -80,7 +119,7 @@ async function main(){
     sheets.forEach(obj=>{
       const a = document.createElement("a");
       a.className = "card";
-      // slugがあればslug、なければtitleやnameを使用
+      // slugがあればslug、なければtitleやnameを使用（従来仕様を維持）
       const slug = obj.slug || obj.title || obj.name;
       a.href = `page.html?sheet=${encodeURIComponent(slug)}`;
       a.textContent = obj.title || slug;
