@@ -3,296 +3,369 @@
 <head>
 <meta charset="UTF-8" />
 <title>Card</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <style>
-/* ===== 学習者向け：サイズ調整ポイント =====
-   --foot-btn-fz / --foot-btn-pad … 下バーのボタンサイズ
-   --foot-h … フッター高さ（本文の下余白に反映）
-*/
-*{box-sizing:border-box}
-:root{
-  --pad:14px;
-  --foot-btn-fz:18px;           /* #下バー文字サイズ */
-  --foot-btn-pad:10px 18px;     /* #下バーパディング */
-  --foot-h:74px;                /* #フッター高さ */
-  --ui-bg:#0f1318;
-  --ui-border:#2a2f36;
-  --ui-text:#e6e6e6;
-  --btn-border:#5e6a75;
-  --accent:#89b4ff;
-}
-@media (max-width:480px){
+  /* ================================
+     # コンセプト / 変更点メモ
+     - 上バーを 1 行に統合（順序: 「1/4」, List, Top, [表の列], [OK/非/交/見]）
+     - List で左ペインを開閉。ペイン上段のみ（ページ名 / 見出しセレクト / Close）。選択＝即ジャンプ
+     - 下バーはボタンを横幅 2.2 倍。配色は明るいグレー系のアウトライン＋白文字。ダブルタップ拡大を抑制
+     - 「交」…表裏を 1 セットとして各単語をシャッフル（「非」が ON なら表示対象だけがシャッフル）
+     - カードの外枠や影は完全撤去（地のアウトラインなし）
+     - Safari でヘッダ直下に 1 行だけテキストが“薄く固定”される事象を margin-collapsing 回避と z-index/overflow で抑止
+     - ここから下の CSS 変数値をいじるだけでサイズ調整可能
+     ================================ */
+
   :root{
-    --foot-btn-fz:16px;
-    --foot-btn-pad:8px 14px;
-    --foot-h:68px;
+    --pad:14px;
+    /* #下タブのボタン寸法：ここを変えると一括で大きさが変わります */
+    --nav-btn-h:54px;      /* 高さ */
+    --nav-btn-w:160px;     /* 横幅（既存比 ≈2.2倍） */
+    --nav-gap:12px;        /* ボタン間の隙間 */
+    --nav-radius:14px;     /* 角丸 */
+    /* 上バー高さ（内部で自動マージン潰れ対策に利用） */
+    --header-pad-y:10px;
   }
-}
-@media (prefers-color-scheme:light){
-  :root{
-    --ui-bg:#f7f8fa;
-    --ui-border:#d5d9df;
-    --ui-text:#1c2127;
-    --btn-border:#66707a;
-    --accent:#1e66f5;
+
+  *{ box-sizing:border-box }
+
+  html,body{ height:100% }
+  body{
+    margin:0;
+    padding-bottom: calc(var(--nav-btn-h) + 24px + env(safe-area-inset-bottom));
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", sans-serif;
+    background:#0f1115; color:#e9edf1;
+    /* iOS のダブルタップ拡大を減らす */
+    touch-action: manipulation;
+    overflow-x:hidden;
   }
-}
-html,body{height:100%}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
-  background:var(--ui-bg);
-  color:var(--ui-text);
-  padding-bottom:calc(var(--foot-h) + env(safe-area-inset-bottom));
-}
 
-/* 上バー */
-header{
-  position:sticky; top:0;
-  background:var(--ui-bg);
-  border-bottom:1px solid var(--ui-border);
-  padding:6px var(--pad);
-  z-index:20;
-}
-.topbar{
-  display:flex; align-items:center; gap:8px;
-  flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
-}
-.topbar::-webkit-scrollbar{display:none}
-.count{white-space:nowrap; opacity:.9; margin-right:2px}
-.btn{border:1px solid var(--btn-border); background:transparent; color:var(--ui-text);
-     border-radius:12px; padding:6px 10px; font-size:14px; line-height:1; cursor:pointer; user-select:none}
-.btn:active{transform:translateY(1px)}
-select{
-  font-size:14px; padding:6px 20px 6px 8px;
-  border-radius:12px; border:1px solid var(--btn-border);
-  background:transparent; color:inherit; max-width:30vw;
-}
-@media (max-width:480px){ select{max-width:44vw} }
-.ck{display:inline-flex;align-items:center;gap:6px}
-.ck input{width:18px;height:18px}
-.ck small{font-size:13px}
+  /* ダーク/ライト自動 */
+  @media (prefers-color-scheme: light){
+    body{ background:#fafafa; color:#0c0d10 }
+  }
 
-/* 左サイドバー（List） */
-.drawer{
-  position:fixed; inset:0 auto 0 0; width:min(320px,90vw);
-  background:var(--ui-bg); border-right:1px solid var(--ui-border);
-  transform:translateX(-100%); transition:transform .2s ease; z-index:30;
-  display:flex; flex-direction:column; max-height:100dvh;
-  padding-top:env(safe-area-inset-top);
-}
-.drawer.open{transform:translateX(0)}
-.dh{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--ui-border)}
-.dh .close{margin-left:auto}
-.shortcut{padding:10px;border-bottom:1px solid var(--ui-border);display:flex;gap:6px;align-items:center}
-.shortcut select{max-width:none}
-.listbox{overflow:auto;padding:8px}
-.word{padding:8px 10px;border-radius:8px;cursor:pointer}
-.word:hover{background:rgba(136,165,191,.12)}
-.word.active{outline:2px solid var(--accent)}
-.word.learned{opacity:.45}
+  /* ヘッダ（1 行、左右に流し込み） */
+  header{
+    position:sticky; top:0; z-index:1000;
+    background:rgba(22,25,31,.92);
+    -webkit-backdrop-filter:saturate(1.1) blur(6px);
+    backdrop-filter:saturate(1.1) blur(6px);
+    border-bottom:1px solid rgba(255,255,255,.08);
+    padding: var(--header-pad-y) calc(var(--pad) + env(safe-area-inset-right)) var(--header-pad-y) calc(var(--pad) + env(safe-area-inset-left));
+  }
+  @media (prefers-color-scheme: light){
+    header{ background:rgba(255,255,255,.92); border-bottom:1px solid #ddd }
+  }
 
-/* 本文 */
-.wrap{max-width:980px;margin:0 auto;padding:10px var(--pad)}
-.card{border-radius:14px; padding:16px; background:transparent; border:1px solid var(--ui-border); min-height:160px}
-.front{font-size:36px; font-weight:800; letter-spacing:.2px}
-.back .section{margin:12px 0}
-.sec-title{font-size:12px;opacity:.65;margin:0 0 4px}
-.sec-body{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
-audio,video{width:100%;margin:8px 0}
-img.cardimg{width:100%;height:auto;border:1px solid var(--ui-border);border-radius:10px;object-fit:contain;background:#000;margin:8px 0;max-height:460px}
-a.inline{color:var(--accent);text-decoration:none} a.inline:hover{text-decoration:underline}
+  .toprow{
+    display:flex; align-items:center; gap:10px; flex-wrap:nowrap;
+    overflow:hidden;
+  }
+  .grow{ flex:1 1 auto; min-width:0 }
 
-/* 下ナビ */
-footer.nav{
-  position:fixed; left:0; right:0; bottom:0;
-  background:var(--ui-bg); border-top:1px solid var(--ui-border);
-  padding:10px calc(var(--pad) + env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) calc(var(--pad) + env(safe-area-inset-right));
-  display:flex; gap:10px; justify-content:center; z-index:25;
-}
-footer.nav button{
-  font-size:var(--foot-btn-fz); padding:var(--foot-btn-pad);
-  color:#fff; background:transparent; border:2px solid var(--btn-border);
-  border-radius:14px; touch-action:manipulation; -webkit-user-select:none; user-select:none;
-}
-footer.nav button:active{transform:translateY(1px)}
+  .count{ opacity:.9; white-space:nowrap }
+
+  /* コンパクト pill ボタン/セレクト/チェック */
+  .pill{ height:34px; padding:0 14px; border:1px solid rgba(255,255,255,.16); background:transparent; color:inherit; border-radius:14px; font-size:15px; line-height:34px }
+  .pill:focus{ outline:2px solid rgba(90,140,255,.5); outline-offset:2px }
+  select.pill{ padding-right:28px }
+  .btn{ cursor:pointer; user-select:none; }
+  .btn:active{ transform:translateY(1px) }
+
+  /* チェックボックスをコンパクト表示 */
+  .chk{
+    display:inline-flex; align-items:center; gap:6px; margin-left:6px; white-space:nowrap;
+    font-size:14px;
+  }
+  .chk input{ width:18px; height:18px; }
+
+  /* 左サイドペイン */
+  aside#side{
+    position:fixed; top:0; left:0; bottom:0; width:min(340px, 86vw);
+    background:rgba(18,20,26,.98);
+    -webkit-backdrop-filter:saturate(1.2) blur(8px);
+    backdrop-filter:saturate(1.2) blur(8px);
+    border-right:1px solid rgba(255,255,255,.08);
+    transform:translateX(-100%); transition:transform .22s ease;
+    z-index:1100; overflow:auto;
+    padding:12px;
+  }
+  @media (prefers-color-scheme: light){
+    aside#side{ background:rgba(255,255,255,.98); border-right:1px solid #ddd }
+  }
+  body.side-open aside#side{ transform:none }
+
+  .side-head{ display:flex; align-items:center; gap:8px; }
+  .side-title{ font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .side-actions{ margin-left:auto; display:flex; gap:8px }
+  .side-select{ height:32px; border-radius:10px; padding:0 12px }
+
+  .list{ margin:10px 0 0; display:flex; flex-direction:column; gap:6px }
+  .row{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 10px; border-radius:10px; cursor:pointer;
+  }
+  .row.learned{ opacity:.45 }
+  .row.active{ background:rgba(255,255,255,.08) }
+  .row:hover{ background:rgba(255,255,255,.06) }
+  @media (prefers-color-scheme: light){
+    .row.active{ background:rgba(0,0,0,.06) }
+    .row:hover { background:rgba(0,0,0,.04) }
+  }
+
+  /* メイン領域 */
+  .wrap{
+    max-width:980px; margin:0 auto; padding:8px var(--pad);
+    /* ヘッダ直下にテキストの“1行ゴースト”が見えるのを抑止 */
+    overflow:visible;
+  }
+
+  /* カードの地（アウトライン/影 なし） */
+  .card{ padding: 14px; border-radius:16px }
+  .front{ font-size: clamp(28px, 6.2vw, 44px); font-weight:800; letter-spacing:.2px; line-height:1.2 }
+
+  /* 裏面 */
+  .back .section{ margin:10px 0 }
+  .sec-title{ font-size:12px; opacity:.7; margin:0 0 4px }
+  .sec-body{ font-size:16px; line-height:1.6; white-space:pre-wrap; word-break:break-word }
+
+  img.cardimg{ width:100%; height:auto; border-radius:10px; object-fit:contain; background:#111; margin:8px 0; max-height:62vh }
+  audio,video{ width:100%; margin:8px 0 }
+
+  a.inline{ word-break:break-all; color:#6aa8ff; text-decoration:none }
+  a.inline:hover{ text-decoration:underline }
+
+  /* 下ナビ */
+  footer.nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:1000;
+    padding:10px calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
+    background:rgba(22,25,31,.92);
+    -webkit-backdrop-filter:saturate(1.1) blur(6px);
+    backdrop-filter:saturate(1.1) blur(6px);
+    border-top:1px solid rgba(255,255,255,.08);
+    display:flex; gap:var(--nav-gap); justify-content:center; flex-wrap:nowrap;
+  }
+  @media (prefers-color-scheme: light){
+    footer.nav{ background:rgba(255,255,255,.92); border-top:1px solid #ddd }
+  }
+  .navbtn{
+    min-width:var(--nav-btn-w); height:var(--nav-btn-h);
+    background:transparent; color:#fff; border-radius:var(--nav-radius);
+    border:2px solid rgba(255,255,255,.65); font-size:18px; font-weight:700;
+    letter-spacing:.05em; cursor:pointer; user-select:none;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    touch-action: manipulation;
+  }
+  @media (prefers-color-scheme: light){
+    .navbtn{ color:#111; border-color:rgba(0,0,0,.6) }
+  }
+  .navbtn:active{ transform: translateY(1px) }
+
+  /* スクロール末尾の補助テキストを下バーに隠さないよう余白 */
+  .below-pad{ height: calc(var(--nav-btn-h) + 28px) }
+
 </style>
 </head>
 <body>
-
-<!-- 左サイドバー（List） -->
-<aside id="drawer" class="drawer" aria-hidden="true">
-  <div class="dh">
-    <strong>List</strong>
-    <button class="btn close" id="closeDrawer">Close</button>
-  </div>
-  <div class="shortcut">
-    <label style="white-space:nowrap">Jump:</label>
-    <select id="jumpSelect"></select>
-    <button class="btn" id="jumpGo">Go</button>
-  </div>
-  <div class="listbox" id="listBox"></div>
-</aside>
-
-<header>
-  <div class="topbar" id="topbar">
-    <div class="count" id="count">0 / 0</div>
-    <button class="btn" id="listBtn">List</button>
-    <button class="btn" id="topBtn">Top</button>
-
-    <select id="frontSelect"></select>
-
-    <span style="flex:1"></span>
-    <label class="ck"><input type="checkbox" id="mixChk"><small>交</small></label>
-    <label class="ck"><input type="checkbox" id="headlineAdd"><small>見</small></label>
-    <label class="ck"><input type="checkbox" id="hideLearned" checked><small>非</small></label>
-    <label class="ck"><input type="checkbox" id="learnedChkTop"><small>OK</small></label>
-  </div>
-</header>
-
-<div class="wrap">
-  <div class="card" id="card">
-    <div id="front" class="front">読み込み中…</div>
-    <div id="back" class="back" style="display:none">
-      <div id="backContainer"></div>
+  <aside id="side" aria-label="ページリスト">
+    <div class="side-head">
+      <div class="side-title" id="sideTitle">ページ</div>
+      <div class="side-actions">
+        <select id="jumpHead" class="side-select" title="見出しへジャンプ"></select>
+        <button id="closeSide" class="pill btn">Close</button>
+      </div>
     </div>
-  </div>
-</div>
+    <div id="sideList" class="list"></div>
+    <div class="below-pad"></div>
+  </aside>
 
-<footer class="nav">
-  <button id="prevBtn">◀ 前</button>
-  <button id="nextBtn">次 ▶</button>
-</footer>
+  <header>
+    <div class="toprow">
+      <div class="count" id="count">0 / 0</div>
+
+      <button id="listBtn" class="pill btn">List</button>
+      <button id="topBtn"  class="pill btn" onclick="location.href='index.html'">Top</button>
+
+      <div class="grow"></div>
+
+      <select id="frontSelect" class="pill" title="表にする列"></select>
+
+      <label class="chk"><input type="checkbox" id="okChk"> OK</label>
+      <label class="chk"><input type="checkbox" id="hideLearned" checked> 非</label>
+      <label class="chk"><input type="checkbox" id="pairShuffle"> 交</label>
+      <label class="chk"><input type="checkbox" id="learnedChkTop"> 見</label>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div id="card" class="card">
+      <div id="front" class="front">読み込み中…</div>
+      <div id="back" class="back" style="display:none">
+        <div id="backContainer"></div>
+      </div>
+    </div>
+    <!-- 下バーに隠れがちなフッタ相当の余白 -->
+    <div class="below-pad"></div>
+  </div>
+
+  <footer class="nav">
+    <!-- #下タブのサイズは CSS 変数 --nav-btn-w / --nav-btn-h を変更してください -->
+    <button id="prevBtn" class="navbtn" aria-label="前へ">◀ 前</button>
+    <button id="nextBtn" class="navbtn" aria-label="次へ">次 ▶</button>
+  </footer>
 
 <script>
-/* ===== 設定 ===== */
+/* ========= 設定 ========= */
 const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
 const SOZAI_BASE_URL = API_URL + "sozai/";
 const FRONT_PREFER = ["英単語","単語","word","Word"];
 const YT_MODE = (location.protocol === "file:") ? "link" : "auto";
-/* ================= */
+/* ======================= */
 
 const SHEET = new URLSearchParams(location.search).get("sheet") || "";
 const KEY_PREFIX = `cards:${SHEET}:`;
 const FRONT_STORE_KEY = `cards:${SHEET}:frontCol`;
-const HEAD_STORE_KEY  = `cards:${SHEET}:heads`;
+
+const $ = id => document.getElementById(id);
+const el = {
+  front: $("front"),
+  back: $("back"),
+  backBox: $("backContainer"),
+  learnedTop: $("learnedChkTop"),
+  hide: $("hideLearned"),
+  frontSel: $("frontSelect"),
+  count: $("count"),
+  pair: $("pairShuffle"),
+  ok: $("okChk"),
+  listBtn: $("listBtn"),
+  side: $("side"),
+  sideTitle: $("sideTitle"),
+  sideList: $("sideList"),
+  jumpHead: $("jumpHead"),
+  closeSide: $("closeSide"),
+};
 
 const getKey  = w => KEY_PREFIX + w;
 const isLearn = w => localStorage.getItem(getKey(w)) === "1";
 const setLearn = (w,v) => v ? localStorage.setItem(getKey(w),"1") : localStorage.removeItem(getKey(w));
 
-let rowsAll = [], headers = [], rowsView = [], order = [];
+let rowsAll = [], headers = [], rowsView = [];
 let idx = 0, showBack = false, lastAudio = null;
 
-const $ = id => document.getElementById(id);
-const el = {
-  front: $("front"), back: $("back"), backBox: $("backContainer"),
-  learnedTop: $("learnedChkTop"), hide: $("hideLearned"),
-  frontSel: $("frontSelect"), count: $("count"), mix: $("mixChk"),
-  headline: $("headlineAdd"), drawer: $("drawer"),
-  listBox: $("listBox"), jumpSelect: $("jumpSelect")
-};
-
-/* ---- ヘルパー ---- */
+/* ========== ヘルパー（メディア/URL） ========== */
 function hasExt(u){ return /\.[a-z0-9]{2,5}(\?|$)/i.test(u||""); }
 function isLocalLike(u){ if(!u) return false; if(/^https?:\/\//i.test(u)) return false; if(/^data:/i.test(u)) return false; return true; }
 function resolveSozaiPath(u){
-  if(!u) return ""; let s=String(u).trim(); if(!s) return s;
+  if(!u) return "";
+  let s = String(u).trim();
+  if(!s) return s;
   s = s.replace(/^[\s,;:()［］【】「」『』“”'"。．、]+|[\s,;:()［］【】「」『』“”'"。．、]+$/g, "");
   if(!isLocalLike(s)) return s;
   if(s.includes("sozai/")) s = s.split("/").pop();
-  if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")) return SOZAI_BASE_URL + encodeURIComponent(s);
+  if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")){
+    return SOZAI_BASE_URL + encodeURIComponent(s);
+  }
   return s;
 }
 function isVideoUrl(u){ return /\.(mp4|webm|ogg|mkv)(\?|$)/i.test(u||""); }
 function isAudioUrl(u){ return /\.(mp3|m4a|aac|wav|ogg|opus)(\?|$)/i.test(u||""); }
 function isHttpUrl(u){ return /^https?:\/\//i.test(u || ""); }
-function baseName(u){ try{const x=(u||"").split("#")[0].split("?")[0]; return x.split("/").pop()||x;}catch(_){return u;} }
+function baseName(u){ try{ const x=(u||"").split("#")[0].split("?")[0]; return x.split("/").pop()||x; }catch{ return u } }
 function isYouTubeUrl(u){ return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(u||""); }
 function parseYouTubeId(u){ const m=(u||"").match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/); return m?m[1]:null; }
 function parseStartSeconds(u){
-  try{const url=new URL(u,location.origin);const t=url.searchParams.get("t"),st=url.searchParams.get("start");
-    const toSec=s=>{if(!s)return 0;if(/^\d+$/.test(s))return +s;let sec=0;const m=s.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
-      if(m){if(m[1])sec+=+m[1]*3600;if(m[2])sec+=+m[2]*60;if(m[3])sec+=+m[3]} return sec;};
-    return st?toSec(st):toSec(t);
-  }catch{return 0;}
+  try{
+    const url=new URL(u, location.origin);
+    const t = url.searchParams.get("t");
+    const s = url.searchParams.get("start");
+    const toSec = str=>{
+      if(!str) return 0; if(/^\d+$/.test(str)) return parseInt(str,10);
+      let sec=0; const m=str.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
+      if(m){ if(m[1]) sec+=+m[1]*3600; if(m[2]) sec+=+m[2]*60; if(m[3]) sec+=+m[3] }
+      return sec;
+    };
+    return s?toSec(s):toSec(t);
+  }catch{ return 0 }
 }
-function ytEmbedUrl(u){const id=parseYouTubeId(u); if(!id) return ""; const s=parseStartSeconds(u); const p=new URLSearchParams(); if(s)p.set("start",String(s));
+function ytEmbedUrl(u){
+  const id=parseYouTubeId(u); if(!id) return "";
+  const start=parseStartSeconds(u);
+  const p=new URLSearchParams(); if(start) p.set("start", String(start));
   p.set("modestbranding","1"); p.set("rel","0"); p.set("playsinline","1");
-  return `https://www.youtube-nocookie.com/embed/${id}${p.toString()?"?"+p.toString():""}`;}
-function ytWatchUrl(u){const id=parseYouTubeId(u); if(!id)return u; const s=parseStartSeconds(u); const p=new URLSearchParams(); p.set("v",id); if(s)p.set("t",String(s)); return `https://www.youtube.com/watch?${p.toString()}`;}
+  return `https://www.youtube-nocookie.com/embed/${id}?${p.toString()}`;
+}
+function ytWatchUrl(u){ const id=parseYouTubeId(u); if(!id) return u; const start=parseStartSeconds(u); const p=new URLSearchParams(); p.set("v",id); if(start)p.set("t",String(start)); return `https://www.youtube.com/watch?${p.toString()}`; }
 function ytThumbUrl(u){ const id=parseYouTubeId(u); return id?`https://i.ytimg.com/vi/${id}/hqdefault.jpg`:""; }
+
 function normalizeDrive(u){
   if(!u) return "";
   const first=String(u).trim().split(/[\s\n]+/)[0];
-  const pats=[/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/,/drive\.google\.com\/open\?id=([A-Za-z0-9_-]{10,})/,/docs\.google\.com\/.*?\/d\/([A-Za-z0-9_-]{10,})/,/drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]{10,})/];
-  for(const p of pats){ const m=first.match(p); if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`; }
-  if(first.includes("/uc?export=download&id=")) return first; return first;
+  const patterns=[
+    /drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/,
+    /drive\.google\.com\/open\?id=([A-Za-z0-9_-]{10,})/,
+    /docs\.google\.com\/.*?\/d\/([A-Za-z0-9_-]{10,})/,
+    /drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]{10,})/
+  ];
+  for(const p of patterns){ const m=first.match(p); if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`; }
+  if(first.includes("/uc?export=download&id=")) return first;
+  return first;
 }
 function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u||""); }
 function isImageUrl(u){
-  if(!u) return false;
-  const l=u.toLowerCase();
-  return /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(l) ||
-         l.includes("googleusercontent.com") || l.includes("/uc?export=download&id=") ||
-         l.includes("lh3.google") || l.includes("imgur.com") || l.includes("gyazo.com");
+  if(!u) return false; const s=u.toLowerCase();
+  return /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(s)
+    || s.includes("googleusercontent.com")
+    || s.includes("/uc?export=download&id=")
+    || s.includes("lh3.google")
+    || s.includes("imgur.com")
+    || s.includes("gyazo.com");
 }
 function urlize(text){
-  const re=/(https?:\/\/[^\s]+)/g; const frag=document.createDocumentFragment();
-  let last=0,m; while((m=re.exec(text))!==null){ if(m.index>last) frag.append(document.createTextNode(text.slice(last,m.index)));
-    const a=document.createElement("a"); a.href=m[0]; a.textContent=m[0]; a.target="_blank"; a.rel="noopener"; a.className="inline"; frag.append(a); last=re.lastIndex; }
-  if(last<text.length) frag.append(document.createTextNode(text.slice(last)));
+  const re=/(https?:\/\/[^\s]+)/g; const frag=document.createDocumentFragment(); let last=0, m;
+  while((m=re.exec(text))){ if(m.index>last) frag.append(text.slice(last,m.index)); const a=document.createElement("a"); a.href=m[0]; a.textContent=m[0]; a.target="_blank"; a.rel="noopener"; a.className="inline"; frag.append(a); last=re.lastIndex; }
+  if(last<text.length) frag.append(text.slice(last));
   return frag;
 }
 
-/* 表面列 */
+/* ========== ビュー構築 ========== */
 function pickInitialFront(headers){
-  const saved=localStorage.getItem(FRONT_STORE_KEY);
+  const saved = localStorage.getItem(FRONT_STORE_KEY);
   if(saved && headers.includes(saved)) return saved;
   for(const c of FRONT_PREFER){ if(headers.includes(c)) return c; }
   return headers[0] || "";
 }
 
-/* 表示対象と順序 */
 function rebuildView(){
-  const frontKey=el.frontSel.value;
+  const frontKey = el.frontSel.value;
   rowsView = rowsAll.filter(row => {
-    const v = String(row[frontKey] ?? "");
-    return el.hide.checked ? !isLearn(v) : true;
+    const frontVal = String(row[frontKey] ?? "");
+    return el.hide.checked ? !isLearn(frontVal) : true;
   });
-  buildOrder();
-  if(order.length===0) idx=0; else if(idx>=order.length) idx=order.length-1;
-  el.count.textContent = `${order.length ? idx+1 : 0} / ${order.length}`;
-  rebuildDrawer();
-}
-function buildOrder(){
-  order = rowsView.map((_,i)=>i);
-  if(el.mix.checked){
-    for(let i=order.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
-  }
+  // ペアシャッフルの索引も更新
+  if(el.pair.checked) buildPairOrder();
+  if(rowsView.length===0) idx=0; else if(idx>=rowsView.length) idx = rowsView.length-1;
+  el.count.textContent = `${rowsView.length ? idx+1 : 0} / ${rowsView.length}`;
+  buildSideList();
 }
 
-/* YouTube描画 */
-function renderYouTube(sec, url){
-  const embed=ytEmbedUrl(url), watch=ytWatchUrl(url), thumb=ytThumbUrl(url);
+/* YouTube 埋め込み */
+function renderYouTube(sec, urlOriginal){
+  const embed=ytEmbedUrl(urlOriginal), watch=ytWatchUrl(urlOriginal), thumb=ytThumbUrl(urlOriginal);
   if(YT_MODE==="link" || !embed){
-    const fb=document.createElement("div"); fb.className="yt-fallback";
-    if(thumb){ const img=document.createElement("img"); img.src=thumb; img.alt="YouTube Thumbnail"; img.loading="lazy"; fb.appendChild(img); }
-    const a=document.createElement("a"); a.href=watch; a.target="_blank"; a.rel="noopener"; a.className="play"; a.innerHTML="▶ YouTubeで再生"; fb.appendChild(a);
-    const hint=document.createElement("div"); hint.className="hint"; hint.textContent="クリックで開く"; fb.appendChild(hint);
+    const fb=document.createElement("div");
+    if(thumb){ const img=document.createElement("img"); img.src=thumb; img.alt="YouTube"; img.loading="lazy"; img.style.width="100%"; img.style.borderRadius="10px"; fb.appendChild(img); }
+    const a=document.createElement("a"); a.href=watch; a.target="_blank"; a.rel="noopener"; a.className="inline"; a.textContent="▶ YouTubeで再生"; fb.appendChild(a);
     sec.appendChild(fb); return;
   }
-  const box=document.createElement("div"); box.className="yt";
-  const ifr=document.createElement("iframe"); ifr.src=embed; ifr.loading="lazy";
-  ifr.allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-  ifr.setAttribute("allowfullscreen","");
-  box.appendChild(ifr); sec.appendChild(box);
-  const under=document.createElement("div"); under.className="muted"; under.style.marginTop="6px";
-  const link=document.createElement("a"); link.href=watch; link.target="_blank"; link.rel="noopener"; link.textContent="YouTubeで開く"; link.className="inline";
-  under.appendChild(link); sec.appendChild(under);
+  const box=document.createElement("div"); box.style.position="relative"; box.style.width="100%"; box.style.aspectRatio="16/9";
+  const iframe=document.createElement("iframe");
+  iframe.src=embed; iframe.loading="lazy"; iframe.allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"; iframe.setAttribute("allowfullscreen","");
+  iframe.style.position="absolute"; iframe.style.inset="0"; iframe.style.width="100%"; iframe.style.height="100%"; iframe.style.border="0";
+  box.appendChild(iframe); sec.appendChild(box);
 }
 
-/* 裏面描画 */
+/* 裏面 */
 function renderBack(row){
   el.backBox.innerHTML="";
   const frontKey=el.frontSel.value;
@@ -305,6 +378,7 @@ function renderBack(row){
 
     const val=String(raw).trim();
     const tokens=val.split(/[\n,、]+|\t+/).map(s=>s.trim()).filter(Boolean);
+
     let hasMedia=false, remainingText=val;
 
     tokens.forEach(tok=>{
@@ -313,7 +387,7 @@ function renderBack(row){
 
       if(isYouTubeUrl(resolved)){ renderYouTube(sec,resolved); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return; }
       if(isGooglePhotosUrl(resolved)){
-        const img=document.createElement("img"); img.className="cardimg"; img.src=getGooglePhotosDirectUrl(resolved); img.alt=key; img.loading="lazy";
+        const img=document.createElement("img"); img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
         img.onerror=function(){ this.style.display='none'; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
         sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
@@ -321,18 +395,17 @@ function renderBack(row){
 
       if(isImageUrl(resolved)){
         const img=document.createElement("img"); img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
-        img.onerror=function(){ this.style.display='none'; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
+        img.onerror=function(){ this.style.display="none"; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
         sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
       if(isAudioUrl(resolved)){
-        const audio=document.createElement("audio"); audio.controls=true; audio.src=resolved;
-        audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
-        sec.appendChild(audio); const cap=document.createElement("div"); cap.className="muted"; cap.textContent=baseName(resolved); sec.appendChild(cap);
+        const audio=document.createElement("audio"); audio.controls=true; audio.src=resolved; audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
+        sec.appendChild(audio); const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved); sec.appendChild(cap);
         hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
       if(isVideoUrl(resolved)){
         const video=document.createElement("video"); video.controls=true; video.src=resolved; video.style.width="100%"; video.style.margin="8px 0";
-        sec.appendChild(video); const cap=document.createElement("div"); cap.className="muted"; cap.textContent=baseName(resolved); sec.appendChild(cap);
+        sec.appendChild(video); const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved); sec.appendChild(cap);
         hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
     });
@@ -351,113 +424,174 @@ function renderBack(row){
 
 /* 表示 */
 function render(){
-  if(order.length===0){
+  if(rowsView.length===0){
     el.front.textContent="表示できるカードがありません";
     el.back.style.display="none"; el.front.style.display="block";
     el.learnedTop.checked=false; el.count.textContent=`0 / 0`; return;
   }
   const frontKey=el.frontSel.value;
-  const row=rowsView[order[idx]];
-  const word=String(row[frontKey]??"(no value)");
-  if(showBack){ el.front.style.display="none"; el.back.style.display="block"; renderBack(row); el.learnedTop.checked=isLearn(word); }
-  else{ el.back.style.display="none"; el.front.style.display="block"; el.front.textContent=word; }
-  el.count.textContent=`${idx+1} / ${order.length}`;
-  highlightInDrawer(order[idx]);
-}
+  const row=rowsView[idx];
+  const frontText=String(row[frontKey]??"(no value)");
 
-/* ナビ（表裏1セット） */
-function next(){ if(!order.length) return; if(!showBack){showBack=true;render();} else {showBack=false; idx=(idx+1)%order.length; render();} }
-function prev(){ if(!order.length) return; if(showBack){showBack=false;render();} else {showBack=true; idx=(idx-1+order.length)%order.length; render();} }
-
-/* 左サイドバー：リスト生成 */
-function getHeadlineIdxList(){
-  try{ return JSON.parse(localStorage.getItem(HEAD_STORE_KEY)||"[]"); }catch{ return []; }
-}
-function addHeadline(currentAbsIndex){
-  const arr=new Set(getHeadlineIdxList());
-  arr.add(currentAbsIndex);
-  localStorage.setItem(HEAD_STORE_KEY, JSON.stringify([...arr].sort((a,b)=>a-b)));
-}
-function rebuildDrawer(){
-  // Jump select（50ごと + 見出し）
-  const total = rowsAll.length;
-  const heads = getHeadlineIdxList().filter(i => i>=0 && i<total);
-  el.jumpSelect.innerHTML="";
-  for(let i=0;i<total;i+=50){
-    const w = String(rowsAll[i][el.frontSel.value] ?? "");
-    const opt=document.createElement("option"); opt.value=String(i); opt.textContent=`${i+1}: ${w}`; el.jumpSelect.appendChild(opt);
+  if(showBack){
+    el.front.style.display="none"; el.back.style.display="block";
+    renderBack(row);
+    el.learnedTop.checked=isLearn(frontText);
+  }else{
+    el.back.style.display="none"; el.front.style.display="block";
+    el.front.textContent=frontText;
   }
-  heads.forEach(i=>{
-    const w = String(rowsAll[i][el.frontSel.value] ?? "");
-    const opt=document.createElement("option"); opt.value=String(i); opt.textContent=`★ ${i+1}: ${w}`; el.jumpSelect.appendChild(opt);
-  });
+  el.count.textContent=`${idx+1} / ${rowsView.length}`;
+  highlightSide();
+}
 
-  // 単語リスト（表示対象のみ。覚えたはグレー）
-  el.listBox.innerHTML="";
-  rowsView.forEach((row,vi)=>{
-    const w=String(row[el.frontSel.value] ?? "");
-    const div=document.createElement("div"); div.className="word"; div.textContent=`${vi+1}. ${w}`;
-    if(isLearn(w)) div.classList.add("learned");
-    div.addEventListener("click", ()=>{ idx=vi; showBack=false; render(); closeDrawer(); });
-    el.listBox.appendChild(div);
+/* ===== ペアシャッフル（交） ===== */
+let pairOrder = []; // rowsView 上の並び順（index配列）
+function buildPairOrder(){
+  pairOrder = rowsView.map((_,i)=>i);
+  for(let i=pairOrder.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1)); [pairOrder[i],pairOrder[j]]=[pairOrder[j],pairOrder[i]];
+  }
+  // 現在の idx を最初に寄せる
+  if(pairOrder.length){
+    const at = pairOrder.indexOf(idx);
+    if(at>0){ [pairOrder[0], pairOrder[at]]=[pairOrder[at], pairOrder[0]]; }
+  }
+}
+let pairPtr = 0; // pairOrder のポインタ
+
+function nextPair(){
+  // 表→裏までは同一カード、裏→次で次カードの表へ
+  if(!showBack){ showBack=true; render(); return; }
+  // 次カード
+  pairPtr = (pairPtr + 1) % pairOrder.length;
+  idx = pairOrder[pairPtr];
+  showBack = false; render();
+}
+function prevPair(){
+  if(showBack){ showBack=false; render(); return; }
+  pairPtr = (pairPtr - 1 + pairOrder.length) % pairOrder.length;
+  idx = pairOrder[pairPtr];
+  showBack = true; render();
+}
+
+/* ===== 左ペイン ===== */
+function buildSideList(){
+  // タイトル
+  $("sideTitle").textContent = SHEET || "ページ";
+  // 見出しセレクト：50ごと＋手動見出し（OK=見）を混在
+  el.jumpHead.innerHTML = "";
+  const opts=[];
+  // 50 ごと
+  for(let i=0;i<rowsView.length;i+=50){
+    const word = String(rowsView[i][el.frontSel.value] ?? "");
+    opts.push({i, label:`No.${i+1}: ${word}`});
+  }
+  // 手動見出し（OK=見）扱い
+  rowsAll.forEach((row, iAll)=>{
+    const word = String(row[el.frontSel.value] ?? "");
+    if(localStorage.getItem(KEY_PREFIX+"HEAD:"+word)==="1"){
+      // rowsView からその index を探す（非表示なら存在しない）
+      const j = rowsView.findIndex(r=>String(r[el.frontSel.value]??"")===word);
+      if(j>=0) opts.push({i:j, label:`★ ${word}`});
+    }
+  });
+  // ラベル昇順（番号が混在しても見やすく）
+  opts.sort((a,b)=>a.i-b.i).forEach(o=>{
+    const op=document.createElement("option"); op.value=String(o.i); op.textContent=o.label; el.jumpHead.appendChild(op);
   });
 }
-function highlightInDrawer(vi){
-  const nodes=[...el.listBox.querySelectorAll(".word")];
-  nodes.forEach(n=>n.classList.remove("active"));
-  const node=nodes[vi]; if(node){ node.classList.add("active"); node.scrollIntoView({block:"nearest"}); }
-}
-function openDrawer(){ el.drawer.classList.add("open"); el.drawer.setAttribute("aria-hidden","false"); }
-function closeDrawer(){ el.drawer.classList.remove("open"); el.drawer.setAttribute("aria-hidden","true"); }
 
-/* データ取得 */
+function highlightSide(){
+  // リスト本体（簡易レンダー）
+  el.sideList.innerHTML = "";
+  rowsView.forEach((row, i)=>{
+    const word = String(row[el.frontSel.value] ?? "");
+    const div=document.createElement("div"); div.className="row"+(isLearn(word)?" learned":"")+(i===idx?" active":"");
+    div.textContent = word;
+    div.addEventListener("click", ()=>{ idx=i; showBack=false; render(); });
+    el.sideList.appendChild(div);
+  });
+  // 見出しセレクトの位置を更新
+  let nearest=0;
+  for(let k=0;k<el.jumpHead.options.length;k++){
+    const v=parseInt(el.jumpHead.options[k].value,10);
+    if(v<=idx) nearest=k; else break;
+  }
+  el.jumpHead.selectedIndex = nearest;
+}
+
+/* ===== データ取得 ===== */
 async function load(){
   try{
-    if (!SHEET) { el.front.textContent = "URLに ?sheet=シート名 を指定してください"; return; }
-    const url = API_URL + encodeURIComponent(SHEET) + ".json";
-    const res = await fetch(url, {cache:"no-store"});
-    if (!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
-    rowsAll = await res.json();
+    if(!SHEET){ el.front.textContent="URLに ?sheet=シート名 を指定してください"; return; }
+    const jsonUrl = API_URL + encodeURIComponent(SHEET) + ".json";
+    const res = await fetch(jsonUrl, { cache:"no-store" });
+    if(!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
+    const data = await res.json();
+    rowsAll = data;
     headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
 
-    el.frontSel.innerHTML=""; headers.forEach(k=>{ const o=document.createElement("option"); o.value=k; o.textContent=k; el.frontSel.appendChild(o); });
-    const initial = pickInitialFront(headers); el.frontSel.value=initial; localStorage.setItem(FRONT_STORE_KEY, initial);
+    // 表セレクト
+    el.frontSel.innerHTML="";
+    headers.forEach(k=>{ const op=document.createElement("option"); op.value=k; op.textContent=k; el.frontSel.appendChild(op); });
 
-    rebuildView(); idx=0; showBack=false; render();
-  }catch(e){ el.front.textContent = `取得エラー: ${e.message}`; console.error(e); }
+    const initial = pickInitialFront(headers);
+    el.frontSel.value = initial;
+    localStorage.setItem(FRONT_STORE_KEY, initial);
+
+    rebuildView();
+    idx=0; showBack=false; render();
+  }catch(e){
+    el.front.textContent = `取得エラー: ${e.message}`;
+    console.error(e);
+  }
 }
 
-/* イベント */
-$("prevBtn").addEventListener("click", prev);
-$("nextBtn").addEventListener("click", next);
-$("topBtn").addEventListener("click", ()=>{ location.href="index.html"; });
-$("listBtn").addEventListener("click", openDrawer);
-$("closeDrawer").addEventListener("click", closeDrawer);
-$("jumpGo").addEventListener("click", ()=>{
-  const abs = parseInt(el.jumpSelect.value||"0",10);
-  // abs(全体) → 表示中インデックスに変換
-  const frontKey=el.frontSel.value;
-  const targetWord = String(rowsAll[abs][frontKey] ?? "");
-  const vi = rowsView.findIndex(r => String(r[frontKey] ?? "") === targetWord);
-  if(vi>=0){ idx=vi; showBack=false; render(); }
-  closeDrawer();
-});
-
-el.learnedTop.addEventListener("change", ()=>{
-  if(!order.length) return;
-  const w=String(rowsView[order[idx]][el.frontSel.value] ?? "");
-  setLearn(w, el.learnedTop.checked);
-  if(el.hide.checked){ rebuildView(); idx=0; showBack=false; }
+/* ===== イベント ===== */
+el.learnedTop.addEventListener("change",(ev)=>{
+  if(!rowsView.length) return;
+  const w = String(rowsView[idx][el.frontSel.value] ?? "");
+  setLearn(w, ev.target.checked);
+  if(el.hide.checked){ rebuildView(); if(idx>=rowsView.length) idx=0; }
   render();
 });
 el.hide.addEventListener("change", ()=>{ rebuildView(); render(); });
-el.mix.addEventListener("change", ()=>{ buildOrder(); idx=0; showBack=false; render(); });
-el.frontSel.addEventListener("change", ()=>{ localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value); rebuildView(); idx=0; showBack=false; render(); });
-el.headline.addEventListener("change", ()=>{
-  if(!order.length){ el.headline.checked=false; return; }
-  const absIndex = rowsAll.findIndex(r => String(r[el.frontSel.value] ?? "") === String(rowsView[order[idx]][el.frontSel.value] ?? ""));
-  if(absIndex>=0) addHeadline(absIndex);
-  el.headline.checked=false; rebuildDrawer();
+
+el.frontSel.addEventListener("change", ()=>{
+  localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value);
+  rebuildView(); showBack=false; render();
+});
+
+$("prevBtn").addEventListener("click", ()=>{ if(!rowsView.length) return; if(el.pair.checked) prevPair(); else { if(showBack){ showBack=false; render(); } else { idx=(idx-1+rowsView.length)%rowsView.length; showBack=true; render(); } } });
+$("nextBtn").addEventListener("click", ()=>{ if(!rowsView.length) return; if(el.pair.checked) nextPair(); else { if(!showBack){ showBack=true; render(); } else { idx=(idx+1)%rowsView.length; showBack=false; render(); } } });
+
+el.pair.addEventListener("change", ()=>{
+  if(el.pair.checked){ buildPairOrder(); pairPtr = pairOrder.indexOf(idx); if(pairPtr<0) pairPtr=0; }
+});
+
+el.ok.addEventListener("change", ()=>{
+  // OK=見出しにする（現在の単語を手動見出しに追加/削除）
+  if(!rowsView.length) return;
+  const w = String(rowsView[idx][el.frontSel.value] ?? "");
+  if(el.ok.checked) localStorage.setItem(KEY_PREFIX+"HEAD:"+w,"1");
+  else localStorage.removeItem(KEY_PREFIX+"HEAD:"+w);
+  buildSideList();
+});
+
+/* 左ペイン */
+el.listBtn.addEventListener("click", ()=>{ document.body.classList.add("side-open"); });
+el.closeSide.addEventListener("click", ()=>{ document.body.classList.remove("side-open"); });
+el.jumpHead.addEventListener("change", ()=>{
+  const v = parseInt(el.jumpHead.value,10);
+  if(!isNaN(v)){ idx=v; showBack=false; render(); }
+});
+
+/* キーボード */
+document.addEventListener("keydown",(e)=>{
+  if(e.target.tagName==="INPUT" || e.target.tagName==="TEXTAREA") return;
+  if(e.key==="ArrowRight") $("nextBtn").click();
+  else if(e.key==="ArrowLeft") $("prevBtn").click();
 });
 
 /* 初期化 */
