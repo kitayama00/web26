@@ -270,11 +270,13 @@ const el = {
   cross: $("crossChk"),
   head: $("headChk"),
   prev: $("prevBtn"),
-  next: $("nextBtn")
+  next: $("nextBtn"),
+  footer: document.querySelector("footer.nav")
 };
 
-/* タイトル（サイド上部） */
-el.sideTitle.textContent = PAGE_NAME;
+/* タイトル（サイド上部）
+   ▼ 追記：左バー上部には「JSONのページ名（=SHEET）」を表示 */
+el.sideTitle.textContent = SHEET || PAGE_NAME;
 
 /* ========== ヘルパー ========= */
 function getFrontText(row, key){ return String(row[key] ?? ""); }
@@ -824,6 +826,18 @@ document.addEventListener("keydown", (e) => {
 
 /* iOS ダブルタップ拡大の誤爆抑止（念のため） */
 document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+
+/* ▼ 追記：フッター実高さに合わせて下余白とサイドの下端を動的調整（かぶり防止強化） */
+function adjustBottomSpace(){
+  const f = el.footer;
+  if(!f) return;
+  const h = f.offsetHeight || 0;          // 実際の高さ（padding含む）
+  document.body.style.paddingBottom = (h + 24) + "px";   // さらに余白+24px
+  const side = el.side;
+  if(side) side.style.bottom = (h + 10) + "px";
+}
+window.addEventListener('load', adjustBottomSpace);
+window.addEventListener('resize', adjustBottomSpace);
 
 /* 初期化 */
 load();
