@@ -31,7 +31,9 @@
   /* ▼ ここを変更するとカード部分の文字サイズが変わります（デフォルト1.2=120%） */
   --card-font-scale: 1.2;
 
-  /* ▼ 下フッターボタンの大きさ（2.2倍指定を反映。さらに変えたい場合はここ） */
+  /* ▼ 下フッターボタンの大きさ（2.2倍指定を反映。さらに変えたい場合はここ）
+  
+*/
   --nav-btn-w: 154px;         /* 70px * 2.2 ≒ 154px */
   --nav-btn-h: 48px;          /* 高さも少しだけ増やす */
 }
@@ -82,7 +84,20 @@ header{
   background:transparent; /* アウトラインは不要のため背景のみ */
 }
 
-/* ▼ カード文字サイズ（--card-font-scaleで調整） */
+/* ▼ カード文字サイズ（--card-font-scaleで調整）
+ ▼ 下フッターボタンの大きさ（2.2倍指定を反映。さらに変えたい場合はここ）
+  
+  裏面本文（いちばん多いテキスト）
+　.sec-body { font-size:16px; line-height:1.6; }
+　→ font-size と line-height を好みの数値に。例えば 18px / 1.7 など。
+　
+　裏面の小見出し（各セクションのタイトル）
+　.sec-title { font-size:12px; }
+　→ 小さく/大きくしたい場合はここ。
+
+　音声・動画の下に出るファイル名キャプション
+　audio+div と video+div の指定があればそこ。無ければ .sec-body に準拠。
+ */
 .front{
   font-size:calc(clamp(36px,7vw,40px) * var(--card-font-scale));
   font-weight:800;
@@ -91,7 +106,7 @@ header{
 
 .back .section{ margin:12px 0; }
 .sec-title{ font-size:14px; opacity:.75; margin:0 0 4px; }
-.sec-body{ font-size:16px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+.sec-body{ font-size:20px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
 
 img.cardimg{
   width:100%; height:auto; border:1px solid #2a3442; border-radius:10px;
