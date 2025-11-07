@@ -28,14 +28,8 @@
   --side-row-gap: 2px;
   --side-row-pad-v: 2px;
 
-  /* ▼ ここを変更するとカード部分（表）の文字サイズが変わります（デフォルト1.2=120%） */
+  /* ▼ ここを変更するとカード部分の文字サイズが変わります（デフォルト1.2=120%） */
   --card-font-scale: 1.2;
-
-  /* ▼ 裏面フォントの一括調整（追加） */
-  --back-font-size: 18px;     /* 裏面本文（sec-body）の基本サイズ */
-  --back-line-height: 1.7;    /* 裏面本文の行間 */
-  --back-title-size: 13px;    /* 裏面小見出し（sec-title）のサイズ */
-  --back-cap-size: 12px;      /* 音声/動画の下に出るファイル名キャプションのサイズ */
 
   /* ▼ 下フッターボタンの大きさ（2.2倍指定を反映。さらに変えたい場合はここ） */
   --nav-btn-w: 154px;         /* 70px * 2.2 ≒ 154px */
@@ -88,31 +82,16 @@ header{
   background:transparent; /* アウトラインは不要のため背景のみ */
 }
 
-/* ▼ カード（表）文字サイズ：--card-font-scaleで調整 */
+/* ▼ カード文字サイズ（--card-font-scaleで調整） */
 .front{
   font-size:calc(clamp(36px,7vw,40px) * var(--card-font-scale));
   font-weight:800;
   white-space:pre-wrap;
 }
 
-/* ▼ 裏面の見出し/本文サイズ（ここだけ置き換え） */
 .back .section{ margin:12px 0; }
-.sec-title{
-  font-size: var(--back-title-size);
-  opacity:.75; margin:0 0 4px;
-}
-.sec-body{
-  font-size: var(--back-font-size);
-  line-height: var(--back-line-height);
-  white-space:pre-wrap; word-break:break-word;
-}
-
-/* ▼ 音声/動画の下に出るキャプションのサイズ統一（追加） */
-.back audio+div,
-.back video+div{
-  font-size: var(--back-cap-size);
-  opacity:.6;
-}
+.sec-title{ font-size:14px; opacity:.75; margin:0 0 4px; }
+.sec-body{ font-size:16px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
 
 img.cardimg{
   width:100%; height:auto; border:1px solid #2a3442; border-radius:10px;
@@ -301,7 +280,7 @@ function isAudioUrl(u){ return /\.(mp3|m4a|aac|wav|ogg|opus)(\?|$)/i.test(u||"")
 function isHttpUrl(u){ return /^https?:\/\//i.test(u || ""); }
 function baseName(u){
   try{
-    const x = (u||"").split("#)[0].split("?")[0];
+    const x = (u||"").split("#")[0].split("?")[0];
     return x.split("/").pop() || x;
   }catch(_){ return u; }
 }
