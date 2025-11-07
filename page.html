@@ -5,120 +5,90 @@
 <title>Card</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <style>
-  /* =========================================
-     # コンセプト / 学習者向けメモ
-     - 上バーを1行に収め、右側に「表ドロップダウン + 4つのチェック(OK/非/交/見)」をコンパクト配置
-     - 左ペインは A列(シート最左列)のみを見出し/リストに使用し、表面の選択に影響されない
-     - 下バーは操作時にズームしないよう touch-action を指定。幅は CSS 変数で調整可能
-       → --nav-btn-w を変えるとボタン横幅が変わります（例: 120px → 180px）
-     ========================================= */
-
+  /* === 基本 === */
   *{box-sizing:border-box}
   :root{
-    --pad:14px;
-    --nav-btn-w: 180px; /* ← #ここの数字を変えたら下部ボタン横幅が変わりますよ */
-    --nav-btn-h: 52px;  /* ← #ここで下部ボタンの高さ */
-    --pill-h: 34px;     /* ← #上バーのピル高さ */
+    --pad:12px;
+    --nav-btn-w: 140px;
+    --nav-btn-h: 46px;
+    --pill-h: 30px;
   }
 
-  @media (prefers-color-scheme: light){
-    body{background:#fafafa;color:#111}
-    header, .side, footer.nav{background:#fff;border-color:#ddd}
-    .pill{ background:#f3f4f6; border:1px solid #ddd; color:#111 }
-    .pill:focus{outline:2px solid #9ac1ff; outline-offset:1px}
-    .side-select{ border-color:#ddd }
-    .row.active{ background:#e9eefc; border-color:#cfe0ff }
-    .row.learned{ opacity:.45 }
-    .count{opacity:.7}
-  }
-  @media (prefers-color-scheme: dark){
-    body{background:#0f1318;color:#e8eaee}
-    header, .side, footer.nav{background:#121820;border-color:#2c3340}
-    .pill{ background:#1e2630; border:1px solid #2f3743; color:#e8eaee }
-    .pill:focus{outline:2px solid #3a7cff; outline-offset:1px}
-    .side-select{ border-color:rgba(255,255,255,.16) }
-    .row.active{ background:#1d2734; border-color:#365a86 }
-    .row.learned{ opacity:.45 }
-    .count{opacity:.7}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
+    margin:0;
+    background:#0f1318;
+    color:#e8eaee;
+    padding-bottom:80px;
   }
 
-  body{font-family:system-ui, -apple-system, Segoe UI, Roboto, 'ヒラギノ角ゴ Pro', 'Noto Sans JP', sans-serif;margin:0;padding-bottom:96px}
-
-  /* ---------- 上バー ---------- */
   header{
     position:sticky;top:0;z-index:20;
-    border-bottom:1px solid; padding:8px var(--pad);
+    padding:6px var(--pad);
+    border-bottom:1px solid rgba(255,255,255,.12);
+    background:#0f1318cc;
+    backdrop-filter:blur(4px);
   }
-  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;overflow:auto}
-  .count{white-space:nowrap;min-width:44px}
-  .btn{height:var(--pill-h); padding:0 14px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; border:1px solid transparent; cursor:pointer; user-select:none}
-  .pill{height:var(--pill-h); border-radius:14px}
-  .btn.small{padding:0 12px}
-  select.pill{padding:0 28px 0 12px; appearance:none; background-image:linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: right 10px top 45%, right 6px top 45%; background-size:6px 6px; background-repeat:no-repeat}
-  .cb{display:inline-flex; align-items:center; gap:6px; white-space:nowrap}
+  .topbar{display:flex;align-items:center;gap:8px;overflow-x:auto;white-space:nowrap}
+  .count{min-width:44px;opacity:.7}
+  .btn{height:var(--pill-h);padding:0 10px;border-radius:12px;background:#1a1f27;border:1px solid rgba(255,255,255,.15);color:#e8eaee;font-size:13px;cursor:pointer}
+  select.pill{height:var(--pill-h);border-radius:12px;padding:0 20px 0 8px;background:#1a1f27;border:1px solid rgba(255,255,255,.15);color:#e8eaee}
+  label.cb{display:inline-flex;align-items:center;gap:4px;font-size:13px}
 
-  /* ---------- レイアウト ---------- */
-  .layout{display:flex; gap:10px}
+  .layout{display:flex}
   .side{
-    width:320px; flex:0 0 320px; border-right:1px solid; padding:10px; position:fixed; inset:48px auto 96px 0; z-index:15; transform:translateX(-100%); transition:transform .18s ease;
+    position:fixed;inset:40px auto 80px 0;width:300px;flex:0 0 300px;
+    background:#10151c;border-right:1px solid rgba(255,255,255,.12);
+    padding:8px;transform:translateX(-100%);
+    transition:transform .2s ease;z-index:15;
   }
-  .side.open{ transform:none }
-  .side-head{display:flex; align-items:center; gap:10px; margin-bottom:8px}
-  .side-title{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .side.open{transform:none}
+  .side-head{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .side-title{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .grow{flex:1}
-  .side-select{ height:34px; border:1px solid; background:transparent; color:inherit; border-radius:14px; padding:0 14px }
-  .list{ margin:10px 0 0; display:flex; flex-direction:column; gap:4px }  /* 行間を詰めた */
-  .row{ padding:6px 9px; gap:6px; border-radius:10px; cursor:pointer; display:flex; align-items:center; border:1px solid transparent }
-  .row:hover{ filter:brightness(1.06) }
+  .side-select{height:26px;border:1px solid rgba(255,255,255,.16);background:#1a1f27;color:#e8eaee;border-radius:10px;padding:0 10px}
+  .list{margin:4px 0 0;display:flex;flex-direction:column;gap:2px}
+  .row{padding:3px 6px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid transparent}
+  .row.active{background:#1d2734;border-color:#365a86}
+  .row.learned{opacity:.45}
 
-  .wrap{max-width:min(1160px, 96vw); margin:0 auto; padding:var(--pad)}
-  .card{border-radius:20px; padding:16px; min-height:220px}
-
-  .front{font-size:clamp(26px, 6vw, 40px); font-weight:800; letter-spacing:.3px}
+  .wrap{max-width:900px;margin:0 auto;padding:var(--pad)}
+  .card{border-radius:16px;padding:14px}
+  .front{font-size:clamp(24px,6vw,38px);font-weight:800;white-space:pre-wrap}
   .back .section{margin:10px 0}
-  .sec-title{font-size:12px;opacity:.65;margin:0 0 4px}
-  .sec-body{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
-  audio,video{width:100%;margin:8px 0}
-  img.cardimg{width:100%;height:auto;border-radius:12px;object-fit:contain;background:#0b0e12;margin:8px 0;max-height:420px;border:1px solid rgba(255,255,255,.06)}
-  a.inline{word-break:break-all}
-  a.inline:hover{text-decoration:underline}
+  .sec-title{font-size:12px;opacity:.65;margin:0 0 2px}
+  .sec-body{font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
 
-  /* ---------- 下バー ---------- */
   footer.nav{
-    position:fixed; left:0; right:0; bottom:0; border-top:1px solid; padding:10px;
-    display:flex; gap:12px; justify-content:center; flex-wrap:nowrap;
-    touch-action:manipulation;  /* ダブルタップでズームしない */
+    position:fixed;left:0;right:0;bottom:0;
+    border-top:1px solid rgba(255,255,255,.12);
+    background:#0f1318cc;backdrop-filter:blur(4px);
+    padding:6px 10px;display:flex;gap:10px;justify-content:center;
   }
-  .nav .navbtn{
-    min-width:var(--nav-btn-w); height:var(--nav-btn-h);
-    border-radius:14px; background:transparent; color:#fff; border:2px solid rgba(255,255,255,.55);
-    display:inline-flex; align-items:center; justify-content:center; font-size:18px; font-weight:700;
+  .navbtn{
+    min-width:var(--nav-btn-w);height:var(--nav-btn-h);
+    border-radius:12px;background:transparent;color:#fff;
+    border:1px solid rgba(255,255,255,.55);
+    font-size:16px;font-weight:700;
   }
-  .nav .navbtn:hover{ filter:brightness(1.1) }
-  .nav .navbtn:active{ transform:translateY(1px) }
-  .nav .navbtn span{pointer-events:none}
 
-  @media (max-width: 480px){
-    .side{ width:80vw; flex:0 0 80vw }
-    .btn.small{padding:0 10px}
-    :root{ --nav-btn-w: 150px; --nav-btn-h: 50px }  /* スマホは少しだけ控えめに */
+  @media(max-width:480px){
+    .side{width:80vw}
+    .navbtn{min-width:130px;height:44px}
   }
 </style>
 </head>
 <body>
 <header>
-  <div class="topbar" id="topbar">
+  <div class="topbar">
     <div class="count" id="count">0/0</div>
-
-    <button class="btn pill small" id="listBtn">List</button>
-    <button class="btn pill small" id="topBtn" onclick="location.href='index.html'">Top</button>
-
+    <button class="btn" id="listBtn">List</button>
+    <button class="btn" id="topBtn" onclick="location.href='index.html'">Top</button>
     <select id="frontSelect" class="pill"></select>
-
-    <label class="cb"><input type="checkbox" id="okChk"> OK</label>
-    <label class="cb"><input type="checkbox" id="hideChk" checked> 非</label>
-    <label class="cb"><input type="checkbox" id="crossChk"> 交</label>
-    <label class="cb"><input type="checkbox" id="headChk"> 見</label>
+    <label class="cb"><input type="checkbox" id="okChk">OK</label>
+    <label class="cb"><input type="checkbox" id="hideChk" checked>非</label>
+    <label class="cb"><input type="checkbox" id="crossChk">交</label>
+    <label class="cb"><input type="checkbox" id="headChk">見</label>
   </div>
 </header>
 
@@ -126,14 +96,14 @@
   <div class="side-head">
     <div class="side-title" id="sideTitle">ページ</div>
     <div class="grow"></div>
-    <select id="jumpHead" class="side-select pill" title="見出しへジャンプ"></select>
-    <button class="btn pill small" id="closeSide">Close</button>
+    <select id="jumpHead" class="side-select"></select>
+    <button class="btn" id="closeSide">Close</button>
   </div>
   <div class="list" id="sideList"></div>
 </aside>
 
 <div class="wrap">
-  <div class="card" id="card">
+  <div class="card">
     <div id="front" class="front">読み込み中…</div>
     <div id="back" class="back" style="display:none">
       <div id="backContainer"></div>
@@ -142,538 +112,32 @@
 </div>
 
 <footer class="nav">
-  <button id="prevBtn" class="navbtn"><span>◀ 前</span></button>
-  <button id="nextBtn" class="navbtn"><span>次 ▶</span></button>
+  <button id="prevBtn" class="navbtn">◀ 前</button>
+  <button id="nextBtn" class="navbtn">次 ▶</button>
 </footer>
 
 <script>
-/* ===== 設定 ===== */
-const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
-const SOZAI_BASE_URL = API_URL + "sozai/";
-const FRONT_PREFER = ["英単語","単語","word","Word"];
-const YT_MODE = (location.protocol === "file:") ? "link" : "auto";
-/* ================= */
+const API_URL="https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
+const SOZAI_BASE_URL=API_URL+"sozai/";
+const SHEET=new URLSearchParams(location.search).get("sheet")||"";
+const PAGE_NAME=new URLSearchParams(location.search).get("title")||SHEET||document.title;
+document.title=PAGE_NAME;
+let rowsAll=[],rowsView=[],headers=[],idx=0,showBack=false,BASE_KEY="";
+const $=id=>document.getElementById(id);
+const el={front:$("front"),back:$("back"),backBox:$("backContainer"),frontSel:$("frontSelect"),count:$("count"),side:$("sidebar"),sideTitle:$("sideTitle"),sideList:$("sideList"),jump:$("jumpHead"),ok:$("okChk"),hide:$("hideChk"),cross:$("crossChk"),head:$("headChk")};
 
-const Q = new URLSearchParams(location.search);
-const SHEET = Q.get("sheet") || "";
-const PAGE_NAME = Q.get("title") || Q.get("pagename") || SHEET || document.title;
-document.title = PAGE_NAME;
-
-const KEY_PREFIX = `cards:${SHEET || PAGE_NAME}:`;
-const FRONT_STORE_KEY = `cards:${SHEET || PAGE_NAME}:frontCol`;
-const getKey  = w => KEY_PREFIX + w;
-const isLearn = w => localStorage.getItem(getKey("LEARN:"+w)) === "1";
-const setLearn = (w,v) => v ? localStorage.setItem(getKey("LEARN:"+w),"1") : localStorage.removeItem(getKey("LEARN:"+w));
-const isHead = w => localStorage.getItem(getKey("HEAD:"+w)) === "1";
-const setHead = (w,v) => v ? localStorage.setItem(getKey("HEAD:"+w),"1") : localStorage.removeItem(getKey("HEAD:"+w));
-
-let rowsAll = [];
-let headers = [];
-let BASE_KEY = "";          // A列
-let rowsView = [];
-let rowsViewShuffled = [];
-let idx = 0;
-let showBack = false;
-let lastAudio = null;
-
-const $ = id => document.getElementById(id);
-const el = {
-  front: $("front"),
-  back: $("back"),
-  backBox: $("backContainer"),
-  frontSel: $("frontSelect"),
-  count: $("count"),
-  ok: $("okChk"),
-  hide: $("hideChk"),
-  cross: $("crossChk"),
-  head: $("headChk"),
-  side: $("sidebar"),
-  sideTitle: $("sideTitle"),
-  sideList: $("sideList"),
-  jumpHead: $("jumpHead"),
-};
-
-function hasExt(u){ return /\.[a-z0-9]{2,5}(\?|$)/i.test(u||""); }
-function isLocalLike(u){
-  if(!u) return false;
-  if(/^https?:\/\//i.test(u)) return false;
-  if(/^data:/i.test(u)) return false;
-  return true;
-}
-function resolveSozaiPath(u){
-  if(!u) return "";
-  let s = String(u).trim();
-  if(!s) return s;
-  s = s.replace(/^[\s,;:()［］【】「」『』“”'"。．、]+|[\s,;:()［］【】「」『』“”'"。．、]+$/g, "");
-  if(!isLocalLike(s)) return s;
-  if(s.includes("sozai/")) s = s.split("/").pop();
-  if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")){
-    return SOZAI_BASE_URL + encodeURIComponent(s);
-  }
-  return s;
-}
-function isVideoUrl(u){ return /\.(mp4|webm|ogg|mkv)(\?|$)/i.test(u||""); }
-function isAudioUrl(u){ return /\.(mp3|m4a|aac|wav|ogg|opus)(\?|$)/i.test(u||""); }
-function isHttpUrl(u){ return /^https?:\/\//i.test(u || ""); }
-function baseName(u){
-  try{
-    const x = (u||"").split("#")[0].split("?")[0];
-    return x.split("/").pop() || x;
-  }catch(_){ return u; }
-}
-function isYouTubeUrl(u){ return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(u||""); }
-function parseYouTubeId(u){
-  if(!u) return null;
-  const m = u.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/);
-  return m ? m[1] : null;
-}
-function parseStartSeconds(u){
-  try{
-    const url = new URL(u, location.origin);
-    const t = url.searchParams.get("t");
-    const start = url.searchParams.get("start");
-    const toSec = (str)=>{
-      if(!str) return 0;
-      if(/^\d+$/.test(str)) return parseInt(str,10);
-      let sec = 0;
-      const m = str.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
-      if(m){ if(m[1]) sec += +m[1]*3600; if(m[2]) sec += +m[2]*60; if(m[3]) sec += +m[3]; }
-      return sec;
-    };
-    return start ? toSec(start) : toSec(t);
-  }catch{ return 0; }
-}
-function ytEmbedUrl(u){
-  const id = parseYouTubeId(u);
-  if(!id) return "";
-  const start = parseStartSeconds(u);
-  const params = new URLSearchParams();
-  if(start) params.set("start", String(start));
-  params.set("modestbranding", "1");
-  params.set("rel", "0");
-  params.set("playsinline", "1");
-  return `https://www.youtube-nocookie.com/embed/${id}${params.toString() ? "?" + params.toString() : ""}`;
-}
-function ytWatchUrl(u){
-  const id = parseYouTubeId(u);
-  if(!id) return u;
-  const start = parseStartSeconds(u);
-  const p = new URLSearchParams(); p.set("v", id); if(start) p.set("t", String(start));
-  return `https://www.youtube.com/watch?${p.toString()}`;
-}
-function ytThumbUrl(u){
-  const id = parseYouTubeId(u);
-  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "";
-}
-function extractGooglePhotosId(url){
-  const match1 = url.match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/);
-  if(match1) return match1[1];
-  const match2 = url.match(/photos\.app\.goo\.gl\/([A-Za-z0-9]+)/);
-  if(match2) return match2[1];
-  return null;
-}
-function getGooglePhotosDirectUrl(url){
-  const id = extractGooglePhotosId(url);
-  if(id && id.startsWith("AF1Qip")){
-    return `https://lh3.googleusercontent.com/pw/${id}=w800`;
-  }
-  return url;
-}
-function normalizeDrive(u){
-  if(!u) return "";
-  const first = String(u).trim().split(/[\s\n]+/)[0];
-  const patterns = [
-    /drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/,
-    /drive\.google\.com\/open\?id=([A-Za-z0-9_-]{10,})/,
-    /docs\.google\.com\/.*?\/d\/([A-Za-z0-9_-]{10,})/,
-    /drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]{10,})/
-  ];
-  for(const p of patterns){
-    const m = first.match(p);
-    if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
-  }
-  if(first.includes("/uc?export=download&id=")) return first;
-  return first;
-}
-function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u || ""); }
-function isImageUrl(u){
-  if(!u) return false;
-  const lower = u.toLowerCase();
-  if(/\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(lower)) return true;
-  if(lower.includes("googleusercontent.com")) return true;
-  if(lower.includes("/uc?export=download&id=")) return true;
-  if(lower.includes("lh3.google")) return true;
-  if(lower.includes("imgur.com")) return true;
-  if(lower.includes("gyazo.com")) return true;
-  return false;
-}
-function urlize(text){
-  const re = /(https?:\/\/[^\s]+)/g;
-  const frag = document.createDocumentFragment();
-  let last = 0, m;
-  while((m = re.exec(text)) !== null){
-    if(m.index > last) frag.append(document.createTextNode(text.slice(last, m.index)));
-    const a = document.createElement("a");
-    a.href = m[0]; a.textContent = m[0];
-    a.target = "_blank"; a.rel = "noopener"; a.className = "inline";
-    frag.append(a);
-    last = re.lastIndex;
-  }
-  if(last < text.length) frag.append(document.createTextNode(text.slice(last)));
-  return frag;
-}
-function pickInitialFront(headers){
-  const saved = localStorage.getItem(FRONT_STORE_KEY);
-  if(saved && headers.includes(saved)) return saved;
-  for(const c of FRONT_PREFER){ if(headers.includes(c)) return c; }
-  return headers[0] || "";
-}
-
-function currentList(){
-  // 交(クロスシャッフル)ONなら rowsViewShuffled を使う
-  if(el.cross.checked){
-    if(!rowsViewShuffled.length || rowsViewShuffled.length!==rowsView.length){
-      rowsViewShuffled = rowsView.slice();
-      for(let i=rowsViewShuffled.length-1;i>0;i--){
-        const j=Math.floor(Math.random()*(i+1));
-        [rowsViewShuffled[i],rowsViewShuffled[j]]=[rowsViewShuffled[j],rowsViewShuffled[i]];
-      }
-    }
-    return rowsViewShuffled;
-  }
-  return rowsView;
-}
-
-/* ---------- サイドペイン ---------- */
-function buildSideList(){
-  el.sideTitle.textContent = PAGE_NAME;
-
-  el.jumpHead.innerHTML = "";
-  const opts = [];
-
-  const list = currentList();
-
-  for(let i=0;i<list.length;i+=50){
-    const word = String(list[i][BASE_KEY] ?? "");
-    const op = document.createElement("option");
-    op.value=String(i);
-    op.textContent = `${i+1}: ${word}`;
-    el.jumpHead.appendChild(op);
-  }
-
-  rowsAll.forEach(row=>{
-    const word = String(row[BASE_KEY] ?? "");
-    if(isHead(word)){
-      const j = list.findIndex(r => String(r[BASE_KEY] ?? "") === word);
-      if(j>=0){
-        const op=document.createElement("option");
-        op.value=String(j);
-        op.textContent=`★ ${word}`;
-        el.jumpHead.appendChild(op);
-      }
-    }
-  });
-}
-
-function highlightSide(){
-  el.sideList.innerHTML = "";
-  const list = currentList();
-  list.forEach((row, i)=>{
-    const word = String(row[BASE_KEY] ?? "");
-    const div=document.createElement("div");
-    div.className = "row" + (isLearn(word)?" learned":"") + (i===idx?" active":"");
-    div.textContent = word;
-    div.addEventListener("click", ()=>{ idx=i; showBack=false; render(); });
-    el.sideList.appendChild(div);
-  });
-  // 近い見出しを選択状態に
-  let nearest=0;
-  for(let k=0;k<el.jumpHead.options.length;k++){
-    const v=parseInt(el.jumpHead.options[k].value,10);
-    if(v<=idx) nearest=k; else break;
-  }
-  el.jumpHead.selectedIndex = nearest;
-}
-
-/* ---------- 表示系 ---------- */
-function renderYouTube(sec, urlOriginal){
-  const embed = ytEmbedUrl(urlOriginal);
-  const watch = ytWatchUrl(urlOriginal);
-  const thumb = ytThumbUrl(urlOriginal);
-
-  if(YT_MODE === "link" || !embed){
-    const fb = document.createElement("div");
-    fb.style.position="relative"; fb.style.width="100%"; fb.style.aspectRatio="16/9"; fb.style.borderRadius="10px"; fb.style.overflow="hidden"; fb.style.border="1px solid rgba(255,255,255,.12)"; fb.style.background="#000";
-    if(thumb){
-      const img = document.createElement("img");
-      img.src = thumb; img.alt = "YouTube Thumbnail"; img.loading = "lazy";
-      img.style.width="100%"; img.style.height="100%"; img.style.objectFit="cover";
-      fb.appendChild(img);
-    }
-    const a = document.createElement("a");
-    a.href = watch; a.target = "_blank"; a.rel = "noopener";
-    a.style.position="absolute"; a.style.inset="0"; a.style.display="flex"; a.style.alignItems="center"; a.style.justifyContent="center"; a.style.textDecoration="none"; a.style.color="#fff"; a.style.fontWeight="700"; a.textContent="▶ YouTubeで再生";
-    fb.appendChild(a);
-    sec.appendChild(fb);
-    return;
-  }
-
-  const box = document.createElement("div");
-  box.style.position="relative"; box.style.width="100%"; box.style.aspectRatio="16/9";
-  const iframe = document.createElement("iframe");
-  iframe.src = embed;
-  iframe.loading = "lazy";
-  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-  iframe.setAttribute("allowfullscreen", "");
-  iframe.style.position="absolute"; iframe.style.inset="0"; iframe.style.width="100%"; iframe.style.height="100%"; iframe.style.border="0";
-
-  const under = document.createElement("div");
-  under.className = "sec-body"; under.style.opacity=".7";
-  const link = document.createElement("a");
-  link.href = watch; link.target = "_blank"; link.rel = "noopener"; link.textContent = "YouTubeで開く"; link.className = "inline";
-  under.appendChild(link);
-
-  box.appendChild(iframe);
-  sec.appendChild(box);
-  sec.appendChild(under);
-}
-
-function renderBack(row){
-  el.backBox.innerHTML = "";
-  const frontKey = el.frontSel.value;
-
-  headers.forEach(key => {
-    if(key === frontKey) return;
-    const raw = row[key];
-    if(!raw) return;
-
-    const sec = document.createElement("div");
-    sec.className = "section";
-    const title = document.createElement("p");
-    title.className = "sec-title";
-    title.textContent = key;
-    sec.appendChild(title);
-
-    const val = String(raw).trim();
-
-    const tokens = val.split(/[\n,、]+|\t+/).map(s => s.trim()).filter(Boolean);
-
-    let hasMedia = false;
-    let remainingText = val;
-
-    tokens.forEach(tok => {
-      if(!tok) return;
-      let resolved = resolveSozaiPath(tok);
-
-      if(isYouTubeUrl(resolved)){ renderYouTube(sec, resolved); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return; }
-
-      if(isGooglePhotosUrl(resolved)){
-        const img = document.createElement("img");
-        img.className = "cardimg";
-        img.src = getGooglePhotosDirectUrl(resolved);
-        img.alt = key; img.loading = "lazy";
-        img.onerror = function(){
-          this.style.display='none';
-          const err=document.createElement("div");
-          const a=document.createElement("a"); a.href=resolved; a.textContent="リンク"; a.target="_blank"; a.rel="noopener";
-          err.style.color="#999"; err.style.fontSize="12px"; err.textContent="[画像を表示できません] "; err.appendChild(a);
-          this.parentNode.insertBefore(err,this);
-        };
-        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
-      }
-
-      if(isHttpUrl(resolved)) resolved = normalizeDrive(resolved);
-
-      if(isImageUrl(resolved)){
-        const img=document.createElement("img");
-        img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
-        img.onerror=function(){
-          this.style.display="none";
-          const err=document.createElement("div");
-          const a=document.createElement("a"); a.href=resolved; a.textContent="リンク"; a.target="_blank"; a.rel="noopener";
-          err.style.color="#999"; err.style.fontSize="12px"; err.textContent="[画像を表示できません] "; err.appendChild(a);
-          this.parentNode.insertBefore(err,this);
-        };
-        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
-      }
-
-      if(isAudioUrl(resolved)){
-        const audio=document.createElement("audio"); audio.controls=true; audio.src=resolved;
-        audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
-        sec.appendChild(audio);
-        const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved);
-        sec.appendChild(cap);
-        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
-      }
-
-      if(isVideoUrl(resolved)){
-        const video=document.createElement("video"); video.controls=true; video.src=resolved;
-        video.style.width="100%"; video.style.margin="8px 0";
-        sec.appendChild(video);
-        const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved);
-        sec.appendChild(cap);
-        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
-      }
-    });
-
-    if(remainingText && remainingText.trim()){
-      const body=document.createElement("div");
-      body.className="sec-body";
-      if(remainingText.includes("http")) body.appendChild(urlize(remainingText));
-      else body.textContent=remainingText;
-      sec.appendChild(body);
-    }
-
-    if(!hasMedia && !remainingText.trim() && val){
-      const body=document.createElement("div");
-      body.className="sec-body"; body.appendChild(urlize(val)); sec.appendChild(body);
-    }
-
-    el.backBox.appendChild(sec);
-  });
-}
-
-function rebuildView(){
-  const frontKey = el.frontSel.value;
-  rowsView = rowsAll.filter(row => {
-    const frontVal = String(row[frontKey] ?? "");
-    return el.hide.checked ? !isLearn(String(row[BASE_KEY] ?? "")) : true;
-  });
-  rowsViewShuffled = []; // 交ON時は次回参照時に再生成
-  if(rowsView.length === 0) idx = 0;
-  else if(idx >= rowsView.length) idx = rowsView.length - 1;
-  el.count.textContent = `${rowsView.length ? idx+1 : 0}/${rowsView.length}`;
-  buildSideList();
-  highlightSide();
-}
-
-function render(){
-  const list = currentList();
-
-  if(list.length===0){
-    el.front.textContent="表示できるカードがありません";
-    el.back.style.display="none"; el.front.style.display="block";
-    el.ok.checked=false; el.count.textContent=`0/0`; return;
-  }
-  const frontKey=el.frontSel.value;
-  const row=list[idx];
-  const wordA = String(row[BASE_KEY] ?? "");
-  const frontText=String(row[frontKey]??"(no value)");
-
-  if(showBack){
-    el.front.style.display="none"; el.back.style.display="block";
-    renderBack(row);
-  }else{
-    el.back.style.display="none"; el.front.style.display="block";
-    el.front.textContent=frontText;
-  }
-  el.ok.checked = isLearn(wordA);
-  el.head.checked = isHead(wordA);
-  el.count.textContent=`${idx+1}/${list.length}`;
-  highlightSide();
-}
-
-/* ---------- ナビ ---------- */
-function next(){
-  const list = currentList();
-  if(!list.length) return;
-  if(!showBack){ showBack=true; render(); }
-  else{ idx=(idx+1)%list.length; showBack=false; render(); }
-}
-function prev(){
-  const list = currentList();
-  if(!list.length) return;
-  if(showBack){ showBack=false; render(); }
-  else{ idx=(idx-1+list.length)%list.length; showBack=true; render(); }
-}
-
-/* ---------- データ取得 ---------- */
-async function load(){
-  try{
-    if (!SHEET) {
-      el.front.textContent = "URLに ?sheet=シート名 を指定してください";
-      $("sideTitle").textContent = PAGE_NAME;
-      return;
-    }
-    const jsonUrl = API_URL + encodeURIComponent(SHEET) + ".json";
-    const res = await fetch(jsonUrl, {cache:"no-store"});
-    if (!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
-
-    const data = await res.json();
-    rowsAll = data;
-    headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
-    BASE_KEY = headers[0] || "";
-
-    el.frontSel.innerHTML = "";
-    headers.forEach(k => {
-      const opt = document.createElement("option");
-      opt.value = k; opt.textContent = k; el.frontSel.appendChild(opt);
-    });
-
-    const initial = pickInitialFront(headers);
-    el.frontSel.value = initial;
-    localStorage.setItem(FRONT_STORE_KEY, initial);
-
-    rebuildView();
-    idx = 0;
-    showBack = false;
-    render();
-
-  } catch(e){
-    el.front.textContent = `取得エラー: ${e.message}`;
-    console.error(e);
-  }
-}
-
-/* ---------- イベント ---------- */
-$("listBtn").addEventListener("click", ()=>{ el.side.classList.add("open"); });
-$("closeSide").addEventListener("click", ()=>{ el.side.classList.remove("open"); });
-
-el.jumpHead.addEventListener("change", (e)=>{
-  const v = parseInt(e.target.value,10);
-  if(!isNaN(v)){ idx = v; showBack=false; render(); }
-});
-
-el.ok.addEventListener("change", (ev)=>{
-  const list = currentList();
-  if(!list.length) return;
-  const w = String(list[idx][BASE_KEY] ?? "");
-  setLearn(w, ev.target.checked);
-  if(el.hide.checked){ rebuildView(); }
-  render();
-});
-el.hide.addEventListener("change", ()=>{ rebuildView(); render(); });
-el.cross.addEventListener("change", ()=>{ rowsViewShuffled=[]; idx=0; showBack=false; render(); });
-el.head.addEventListener("change", (ev)=>{
-  const list = currentList();
-  if(!list.length) return;
-  const w = String(list[idx][BASE_KEY] ?? "");
-  setHead(w, ev.target.checked);
-  buildSideList(); highlightSide();
-});
-
-el.frontSel.addEventListener("change", () => {
-  localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value);
-  rebuildView();
-  showBack = false;
-  render();
-});
-
-$("prevBtn").addEventListener("click", prev);
-$("nextBtn").addEventListener("click", next);
-
-// ダブルタップズーム防止の保険
-document.addEventListener('dblclick', e=>{
-  if(e.target.closest('footer.nav')) e.preventDefault();
-}, {passive:false});
-
-document.addEventListener("keydown", (e) => {
-  if(e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
-  if(e.key === "ArrowRight") next();
-  else if(e.key === "ArrowLeft") prev();
-  else if(e.key === " ") { e.preventDefault(); showBack=!showBack; render(); }
-});
-
+function render(){if(!rowsView.length){el.front.textContent="なし";el.back.style.display="none";return;}
+const r=rowsView[idx];const word=r[BASE_KEY];
+if(showBack){el.back.style.display="block";el.front.style.display="none";el.backBox.textContent=JSON.stringify(r,null,2);}
+else{el.back.style.display="none";el.front.style.display="block";el.front.textContent=r[el.frontSel.value]||word;}
+el.count.textContent=`${idx+1}/${rowsView.length}`;}
+async function load(){if(!SHEET){el.front.textContent="?sheet=指定なし";return;}
+const res=await fetch(API_URL+SHEET+".json");const data=await res.json();rowsAll=data;headers=Object.keys(data[0]);BASE_KEY=headers[0];headers.forEach(h=>{const o=document.createElement("option");o.value=h;o.textContent=h;el.frontSel.append(o);});
+rowsView=rowsAll;render();}
+$("listBtn").onclick=()=>el.side.classList.add("open");
+$("closeSide").onclick=()=>el.side.classList.remove("open");
+$("nextBtn").onclick=()=>{if(!rowsView.length)return;if(showBack){idx=(idx+1)%rowsView.length;showBack=false;}else showBack=true;render();};
+$("prevBtn").onclick=()=>{if(!rowsView.length)return;if(showBack){showBack=false;}else{idx=(idx-1+rowsView.length)%rowsView.length;showBack=true;}render();};
 load();
 </script>
 </body>
