@@ -3,26 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <title>Card</title>
-<!-- iOSダブルタップ拡大を抑止し、スマホで1行収まるように -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <style>
   /* =========================
      # コンセプト / 学習者向け注釈
-     ・上バーは1行固定。右に入り切らない場合は横スクロール可
-     ・下バーは控えめな薄グレー＋白文字。iOSのダブルタップ拡大を抑止
-     ・左サイドはページのA列（単語）だけを常に表示。Learnedはグレー
+     ・上バーは1行固定。横に入り切らないときは横スクロール
+     ・下バーは薄グレー枠＋白文字。iOSダブルタップ拡大を抑止
+     ・左サイドはA列（単語）固定表示。Learnedは半透明
      ・ジャンプは「50,100,…」＋「見」チェックで追加した見出しを即移動
-     ・OK=既習/非=既習非表示/交=クロス（フリップ→次をランダム）/見=見出し追加
-     ・ボタンサイズは下のCSS変数を調整
+     ・OK=既習 / 非=既習非表示 / 交=フリップ→次をランダム / 見=見出し追加
+     ・ボタンや余白のサイズは下のCSS変数で調整可能
      ========================= */
 
-  /* ここを変えると全体の余白・ボタンサイズが変わります */
   :root{
     --pad:12px;                 /* ページ余白 */
-    --pill-h: 30px;             /* 上バーの高さ */
-    --nav-btn-w: 140px;         /* 下ボタンの横幅 */
-    --nav-btn-h: 44px;          /* 下ボタンの高さ */
-    --side-w: 300px;            /* 左リスト幅（スマホは自動で縮む） */
+    --pill-h: 30px;             /* 上バー内の高さ目安 */
+    --nav-btn-w: 140px;         /* 下ボタンの横幅（学習者向け：ここを変えると下ボタンの横幅が変わります） */
+    --nav-btn-h: 44px;          /* 下ボタンの高さ（学習者向け：ここを変えると下ボタンの高さが変わります） */
+    --side-w: 240px;            /* 左リスト幅（約20%狭く） */
     --side-row-gap: 1px;        /* 左リスト行間（さらに詰めたい時は 0px） */
     --side-row-pad-v: 2px;      /* 左リストの上下パディング（最小 1px 推奨） */
   }
@@ -30,18 +28,19 @@
   *{ box-sizing: border-box; }
   body{
     font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
-    margin:0;
-    background:#0f1318;   /* 自動ダーク相当 */
-    color:#e8eaee;
-    padding-bottom:80px;  /* 下バーぶんの余白 */
+    margin:0; background:#0f1318; color:#e8eaee;
+    padding-bottom:80px;
   }
 
-  /* 上バー：細身＋薄い境界線、1行・横スクロール */
+  /* 画面押し出しのためのメインコンテナ */
+  .main{ transition: margin-left .2s ease; }
+  body.side-open .main{ margin-left: var(--side-w); }
+
+  /* 上バー（細身・1行・横スクロール） */
   header{
     position:sticky; top:0; z-index:30;
     padding:6px var(--pad);
-    background:#0f1318cc;
-    backdrop-filter: blur(4px);
+    background:#0f1318cc; backdrop-filter: blur(4px);
     border-bottom:1px solid rgba(255,255,255,.12);
   }
   .topbar{
@@ -49,29 +48,36 @@
     overflow-x:auto; white-space:nowrap; scrollbar-width:thin;
   }
   .count{ opacity:.75; }
-  .btn, .pill, .chk{
+  .btn{
     height: var(--pill-h);
     border-radius: 12px;
     border:1px solid rgba(255,255,255,.16);
     background:#1a1f27; color:#e8eaee;
-    font-size:13px;
+    font-size:13px; padding:0 10px; cursor:pointer; touch-action:manipulation;
   }
-  .btn{ padding:0 10px; cursor:pointer; touch-action:manipulation; }
-  .pill{ padding:0 22px 0 8px; }
-  .chk{ display:inline-flex; align-items:center; gap:6px; padding:0 8px; }
-  .chk input{ width:16px; height:16px; }
+  .pill{
+    height: var(--pill-h);
+    border-radius: 12px;
+    border:1px solid rgba(255,255,255,.16);
+    background:#1a1f27; color:#e8eaee;
+    font-size:13px; padding:0 22px 0 8px;
+  }
 
-  /* 左サイド：A列（単語）固定表示。Learnedは半透明。 */
-  .side{
-    position:fixed; inset:40px auto 80px 0;
-    width:var(--side-w); max-width:90vw;
-    transform: translateX(-100%);
-    transition: transform .2s ease;
-    background:#10151c;
-    border-right:1px solid rgba(255,255,255,.12);
-    z-index:20; padding:8px;
+  /* チェックボックスは素の見た目に戻す（省スペース） */
+  .ck{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:13px; /* ラベル文字 */
   }
-  .side.open{ transform:none; }
+  .ck input{ width:16px; height:16px; }
+
+  /* 左サイド：押し出し併用。A列固定。Learnedは半透明。 */
+  .side{
+    position:fixed; left:0; top:40px; bottom:80px; width:var(--side-w);
+    background:#10151c; border-right:1px solid rgba(255,255,255,.12);
+    z-index:20; padding:8px;
+    transform: translateX(-100%); transition: transform .2s ease;
+  }
+  body.side-open .side{ transform:none; }
   .side-head{ display:flex; align-items:center; gap:6px; }
   .side-title{ font-weight:700; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .grow{ flex:1; }
@@ -81,8 +87,10 @@
   }
   .list{ margin-top:6px; display:flex; flex-direction:column; gap: var(--side-row-gap); }
   .row{
-    padding: var(--side-row-pad-v) 8px; font-size:13px; border-radius:8px; cursor:pointer;
-    border:1px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    padding: var(--side-row-pad-v) 8px;
+    font-size:14px; /* 約+10% */
+    border-radius:8px; cursor:pointer; border:1px solid transparent;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .row.active{ background:#1d2734; border-color:#365a86; }
   .row.learned{ opacity:.45; }
@@ -101,14 +109,16 @@
   a.inline{ color:#8fb3ff; word-break:break-all; text-decoration:none; }
   a.inline:hover{ text-decoration:underline; }
 
-  /* 下ナビ：薄グレー枠＋白抜き文字、スマホでも見やすく */
+  /* 下ナビ（薄グレー＋白文字） */
   footer.nav{
     position:fixed; left:0; right:0; bottom:0; z-index:25;
     padding:8px 10px;
     background:#0f1318cc; backdrop-filter: blur(4px);
     border-top:1px solid rgba(255,255,255,.12);
     display:flex; gap:10px; justify-content:center;
+    transition: padding-left .2s ease;
   }
+  body.side-open footer.nav{ padding-left: calc(var(--side-w) + 10px); }
   .navbtn{
     min-width: var(--nav-btn-w); height: var(--nav-btn-h);
     border-radius:12px; font-weight:700; font-size:16px;
@@ -124,21 +134,39 @@
 </style>
 </head>
 <body>
-<header>
-  <!-- 上バー：順序＝「1/4・List・Top・表・OK/非/交/見」 -->
-  <div class="topbar">
-    <div id="count" class="count">0/0</div>
-    <button id="listBtn" class="btn">List</button>
-    <button id="topBtn" class="btn" onclick="location.href='index.html'">Top</button>
-    <select id="frontSelect" class="pill"></select>
-    <label class="chk"><input type="checkbox" id="okChk">OK</label>
-    <label class="chk"><input type="checkbox" id="hideChk" checked>非</label>
-    <label class="chk"><input type="checkbox" id="crossChk">交</label>
-    <label class="chk"><input type="checkbox" id="headChk">見</label>
-  </div>
-</header>
 
-<!-- 左ページリスト：A列固定。ジャンプは即移動。 -->
+<!-- 画面全体を押し出す対象 -->
+<div class="main">
+  <header>
+    <!-- 上バー：順序＝「1/4・List・Top・表・OK/非/交/見」 -->
+    <div class="topbar">
+      <div id="count" class="count">0/0</div>
+      <button id="listBtn" class="btn">List</button>
+      <button id="topBtn" class="btn" onclick="location.href='index.html'">Top</button>
+      <select id="frontSelect" class="pill"></select>
+      <label class="ck"><input type="checkbox" id="okChk">OK</label>
+      <label class="ck"><input type="checkbox" id="hideChk" checked>非</label>
+      <label class="ck"><input type="checkbox" id="crossChk">交</label>
+      <label class="ck"><input type="checkbox" id="headChk">見</label>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card" id="card">
+      <div id="front" class="front">読み込み中…</div>
+      <div id="back" class="back" style="display:none">
+        <div id="backContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="nav">
+    <button id="prevBtn" class="navbtn">◀ 前</button>
+    <button id="nextBtn" class="navbtn">次 ▶</button>
+  </footer>
+</div>
+
+<!-- 左ページリスト（押し出しサイド） -->
 <aside id="sidebar" class="side">
   <div class="side-head">
     <div id="sideTitle" class="side-title">ページ</div>
@@ -149,24 +177,10 @@
   <div id="sideList" class="list"></div>
 </aside>
 
-<div class="wrap">
-  <div class="card" id="card">
-    <div id="front" class="front">読み込み中…</div>
-    <div id="back" class="back" style="display:none">
-      <div id="backContainer"></div>
-    </div>
-  </div>
-</div>
-
-<footer class="nav">
-  <button id="prevBtn" class="navbtn">◀ 前</button>
-  <button id="nextBtn" class="navbtn">次 ▶</button>
-</footer>
-
 <script>
 /* =========================
    設定
-   ・indexを経由しない直リンクでもページ名を出すため ?title= を併用可能
+   ・indexを経由しない直リンクでもページ名を出すため ?title= を併用可
    ========================= */
 const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
 const SOZAI_BASE_URL = API_URL + "sozai/";
@@ -181,7 +195,7 @@ document.title = PAGE_NAME;
 /* LocalStorage Keys */
 const KEY_PREFIX = `cards:${SHEET}:`;
 const FRONT_STORE_KEY = `cards:${SHEET}:frontCol`;
-const HEADS_KEY = `cards:${SHEET}:heads`;     // 「見」で追加した手動見出し（index配列）
+const HEADS_KEY = `cards:${SHEET}:heads`;
 const LEARN_KEY = w => `${KEY_PREFIX}${w}`;
 
 /* State */
@@ -313,7 +327,6 @@ function renderYouTube(sec, urlOriginal){
   const thumb = ytThumbUrl(urlOriginal);
   if(YT_MODE === "link" || !embed){
     const fb = document.createElement("div");
-    fb.className = "yt-fallback";
     if(thumb){
       const img = document.createElement("img");
       img.src = thumb; img.alt = "YouTube Thumbnail"; img.loading = "lazy";
@@ -339,7 +352,7 @@ function renderYouTube(sec, urlOriginal){
   sec.appendChild(box); sec.appendChild(under);
 }
 
-/* ===== 裏面描画 ===== */
+/* ===== Google Photos / Drive 正規化 ===== */
 function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u || ""); }
 function extractGooglePhotosId(url){
   const m1 = url.match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/);
@@ -370,6 +383,7 @@ function normalizeDrive(u){
   return first;
 }
 
+/* ===== 裏面描画 ===== */
 function renderBack(row){
   el.backBox.innerHTML = "";
   const frontKey = el.frontSel.value;
@@ -469,7 +483,6 @@ function rebuildView(){
   if(rowsView.length === 0) idx = 0;
   else if(idx >= rowsView.length) idx = rowsView.length - 1;
   el.count.textContent = `${rowsView.length ? idx+1 : 0}/${rowsView.length}`;
-  // 交モードのキューも再構築
   buildCrossQueue();
   renderSideList();
 }
@@ -489,11 +502,10 @@ function render(){
   if(showBack){
     el.front.style.display="none"; el.back.style.display="block";
     renderBack(row);
-    // OKチェック状態を同期
     el.ok.checked = isLearn(word);
   }else{
     el.back.style.display="none"; el.front.style.display="block";
-    el.front.textContent=frontText; // ←固定で残る細い行はこれで上書きされるだけ。追加DOMは出していない
+    el.front.textContent=frontText;
   }
   el.count.textContent=`${idx+1}/${rowsView.length}`;
   highlightActiveInList();
@@ -504,21 +516,18 @@ function renderSideList(){
   el.sideTitle.textContent = PAGE_NAME || "ページ";
   el.sideList.innerHTML = "";
 
-  // ジャンプセレクト（即移動）
+  // ジャンプセレクト（選択即移動）
   const opts = [];
-  // 50刻み
   for(let i=50; i<=rowsAll.length; i+=50){
     const w = String(rowsAll[i-1]?.[baseKey] ?? "");
     opts.push({label: `${i}:${w}`, index: i-1});
   }
-  // 手動見出し
   headMarks
     .filter(i => i>=0 && i<rowsAll.length)
     .forEach(i => {
       const w = String(rowsAll[i][baseKey] ?? "");
       opts.push({label: `${i+1}:${w}`, index: i});
     });
-  // 重複排除＋昇順
   const map = new Map();
   for(const o of opts) map.set(o.index, o);
   const final = Array.from(map.values()).sort((a,b)=>a.index-b.index);
@@ -530,12 +539,11 @@ function renderSideList(){
   final.forEach(o=>{
     const op = document.createElement("option");
     op.value = String(o.index);
-    op.textContent = o.label.replace(/^No\./i,""); // 「No.」を消す
+    op.textContent = o.label.replace(/^No\./i,""); // No. を除去
     el.jump.appendChild(op);
   });
 
   // リスト（A列のみ）
-  const base = el.frontSel.value; // 表示はA列固定なので baseKey 使用
   rowsAll.forEach((r, i) => {
     const div = document.createElement("div");
     const w = String(r[baseKey] ?? "");
@@ -554,7 +562,6 @@ function highlightActiveInList(){
 }
 
 function absoluteIndexOfCurrent(){
-  // 現在の rowsView[idx] が rowsAll の何番目か
   if(!rowsView.length) return 0;
   const r = rowsView[idx];
   const target = r[baseKey];
@@ -562,16 +569,11 @@ function absoluteIndexOfCurrent(){
 }
 
 function openByAbsoluteIndex(absIndex){
-  // absIndex を rowsView の idx にマップし直す
   const word = String(rowsAll[absIndex]?.[baseKey] ?? "");
   const viewIndex = rowsView.findIndex(r => String(r[baseKey]??"")===word);
   if(viewIndex>=0){
-    idx = viewIndex;
-    showBack = false;
-    render();
-    if(!el.side.classList.contains("open")){} // そのまま
+    idx = viewIndex; showBack = false; render();
   }else{
-    // 非表示により見つからない時は hide を外して移動
     el.hide.checked = false;
     rebuildView();
     const vi2 = rowsView.findIndex(r => String(r[baseKey]??"")===word);
@@ -620,6 +622,9 @@ async function load(){
     localStorage.setItem(FRONT_STORE_KEY, initial);
 
     loadHeads();
+    // 初期表示のタイトルも念のためセット
+    el.sideTitle.textContent = PAGE_NAME || "ページ";
+
     rebuildView();
     idx = 0; showBack = false;
     render();
@@ -630,14 +635,17 @@ async function load(){
 }
 
 /* ===== イベント ===== */
-$("listBtn").addEventListener("click", ()=> el.side.classList.add("open"));
-$("closeSide").addEventListener("click", ()=> el.side.classList.remove("open"));
+$("listBtn").addEventListener("click", ()=>{
+  document.body.classList.add("side-open");
+});
+$("closeSide").addEventListener("click", ()=>{
+  document.body.classList.remove("side-open");
+});
 
 el.jump.addEventListener("change", (ev)=>{
   const v = ev.target.value;
   if(v==="") return;
   openByAbsoluteIndex(Number(v));
-  // 選択即移動なので初期値へ戻す
   ev.target.value = "";
 });
 
@@ -675,7 +683,6 @@ el.head.addEventListener("change", ()=>{
 el.frontSel.addEventListener("change", ()=>{
   localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value);
   showBack = false;
-  // 表示内容は frontSel に変わるが、左リストとジャンプはA列固定なのでそのまま
   render();
 });
 
@@ -683,7 +690,6 @@ el.frontSel.addEventListener("change", ()=>{
 el.next.addEventListener("click", ()=>{
   if(!rowsView.length) return;
   if(!showBack){ showBack = true; render(); return; }
-  // showBack=true → 次へ
   if(el.cross.checked && crossQueue.length){
     crossPtr = (crossPtr + 1) % crossQueue.length;
     idx = crossQueue[crossPtr];
@@ -705,7 +711,7 @@ el.prev.addEventListener("click", ()=>{
   showBack = true; render();
 });
 
-/* キーボード（必要なら） */
+/* キーボード（任意） */
 document.addEventListener("keydown", (e)=>{
   if(e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
   if(e.key === "ArrowRight") el.next.click();
@@ -715,7 +721,6 @@ document.addEventListener("keydown", (e)=>{
 });
 
 /* 初期化 */
-$("sideTitle").textContent = PAGE_NAME || "ページ";
 load();
 </script>
 </body>
