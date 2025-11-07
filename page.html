@@ -5,52 +5,120 @@
 <title>Card</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
+  /* =========================
+     #UI 調整パラメータ
+     下部ナビのボタンサイズはここを変更
+     --btn-h:高さ / --btn-fz:文字サイズ
+  ==========================*/
+  :root{
+    --pad:14px;
+    --btn-h:44px;   /* ← #ここを変えるとボタンの高さが変わります */
+    --btn-fz:16px;  /* ← #ここを変えるとボタンの文字サイズが変わります */
+    --sidebar-w: 300px;
+    --accent: #2563eb;
+    --muted: #6b7280;
+    --bg: #fafafa;
+    --card: #ffffff;
+    --border: #ddd;
+    --text: #111;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1115; --card:#151922; --border:#2a3140; --text:#e5e7eb; --muted:#9aa4b2; --accent:#60a5fa;
+    }
+  }
+
   *{box-sizing:border-box}
-  :root{--pad:14px}
-  body{font-family:sans-serif;margin:0;padding-bottom:88px;background:#fafafa}
-  header{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:10px var(--pad);z-index:10}
-  h2{margin:0;font-size:18px}
-  .controls{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
-  button,label,select{font-size:14px}
-  .wrap{max-width:760px;margin:0 auto;padding:var(--pad)}
-  .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:var(--pad);box-shadow:0 2px 10px rgba(0,0,0,.06);min-height:220px}
-  .front{font-size:30px;font-weight:800;letter-spacing:.3px}
-  .back .section{margin:10px 0}
-  .sec-title{font-size:12px;opacity:.65;margin:0 0 4px}
-  .sec-body{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
-  .learn-top{margin-left:auto;display:flex;align-items:center;gap:8px}
+  html,body{height:100%}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding-bottom:96px;background:var(--bg);color:var(--text)}
+
+  /* ヘッダ（1行に統合） */
+  header{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--border);padding:8px var(--pad);z-index:20}
+  .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .title{font-weight:700}
+  .count{opacity:.75}
+  .bar-spacer{flex:1}
+  select,button,label{font-size:14px}
+  button{appearance:none;border:1px solid var(--border);background:var(--card);padding:6px 10px;border-radius:8px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  .chk{display:inline-flex;align-items:center;gap:4px;user-select:none}
+  .tiny{font-size:12px;opacity:.85}
+
+  /* コンテンツ幅を広めに */
+  .wrap{max-width:980px;margin:0 auto;padding:var(--pad)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:clamp(12px,2.6vw,24px);box-shadow:0 2px 10px rgba(0,0,0,.06);min-height:220px}
+  .front{font-size:clamp(26px,4.6vw,40px);font-weight:800;letter-spacing:.3px}
+  .back .section{margin:12px 0}
+  .sec-title{font-size:12px;color:var(--muted);margin:0 0 4px}
+  .sec-body{font-size:16px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
   audio,video{width:100%;margin:8px 0}
-  img.cardimg{width:100%;height:auto;border:1px solid #eee;border-radius:10px;object-fit:contain;background:#f7f7f7;margin:8px 0;max-height:400px}
-  .muted{opacity:.6}
-  .count{opacity:.7}
-  footer.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;padding:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-  a.inline{word-break:break-all;color:#0066cc;text-decoration:none}
+  img.cardimg{width:100%;height:auto;border:1px solid var(--border);border-radius:10px;object-fit:contain;background:#0b0b0b10;margin:8px 0;max-height:480px}
+  a.inline{word-break:break-all;color:var(--accent);text-decoration:none}
   a.inline:hover{text-decoration:underline}
-  .yt{position:relative;width:100%;aspect-ratio:16/9}
-  .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-  .yt-fallback{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid #ddd;background:#000}
-  .yt-fallback img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.1)}
-  .yt-fallback a.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;font-weight:700;background:linear-gradient(transparent, rgba(0,0,0,.35))}
-  .yt-fallback .hint{position:absolute;right:8px;bottom:8px;font-size:12px;color:#fff;background:rgba(0,0,0,.5);padding:3px 6px;border-radius:6px}
+  .muted{color:var(--muted)}
+
+  /* 下部ナビ（サイズは変数で調整） */
+  footer.nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--border);padding:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;z-index:15}
+  footer.nav button{height:var(--btn-h);min-width:92px;font-size:var(--btn-fz)}
+
+  /* 左サイドページリスト（List） */
+  .side{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);background:var(--card);border-right:1px solid var(--border);transform:translateX(-100%);transition:transform .18s ease;z-index:25;display:flex;flex-direction:column}
+  .side.open{transform:none}
+  .side-head{padding:10px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center}
+  .side-body{overflow:auto}
+  .jump{width:100%}
+  .current-pin{position:sticky;top:0;background:var(--card);border-bottom:1px dashed var(--border);padding:8px 10px;color:var(--accent);font-weight:700}
+  .list{list-style:none;margin:0;padding:6px}
+  .list li{padding:6px 8px;border-radius:8px;display:flex;align-items:center;gap:8px}
+  .list li:hover{background:rgba(0,0,0,.06)}
+  .list .is-cur{background:rgba(37,99,235,.11)}
+  .list .is-learned{opacity:.45}
+  .idx{display:inline-block;min-width:40px;color:var(--muted)}
 </style>
 </head>
 <body>
+
+<!--
+# 要望メモ
+- ヘッダは1行に統合。左から「ページ名 / N/X / List / 表 select / 見 非 OK / TOP reset」の順でコンパクト配置
+- List で左サイドのページリストを開閉。現在の単語は上部固定に反映。覚えた項目はグレーアウト。
+- ページリスト上部のショートカット：50件ごとに「No.51,101,...」を自動で追加。チェック「見」で任意見出しも追加。
+- ダークモードは OS 依存で自動。下部ナビのボタンサイズは :root の --btn-h / --btn-fz を変更。
+-->
+
 <header>
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <h2 id="title" style="margin-right:8px">Card</h2>
-    <div class="count" id="count">0 / 0</div>
-    <label class="learn-top"><input type="checkbox" id="learnedChkTop"> このカードを覚えた</label>
-  </div>
-  <div class="controls">
-    <label>表の列:
+  <div class="bar">
+    <div class="title tiny" id="pageName">Card</div>
+    <div class="count tiny" id="count">0/0</div>
+
+    <button id="listBtn" title="ページリスト">List</button>
+
+    <label class="chk tiny">表
       <select id="frontSelect"></select>
     </label>
-    <label><input type="checkbox" id="hideLearned" checked> 覚えた項目を非表示</label>
-    <button id="resetBtn">学習状態リセット</button>
-    <button onclick="location.href='index.html'">トップ</button>
-    <span class="muted">← →:移動 / Space:表裏 / L:既習</span>
+
+    <span class="bar-spacer"></span>
+
+    <label class="chk tiny" title="この語を見出しに追加"><input type="checkbox" id="markHeading"> 見</label>
+    <label class="chk tiny" title="覚えた項目を非表示"><input type="checkbox" id="hideLearned" checked> 非</label>
+    <label class="chk tiny" title="このカードを覚えた"><input type="checkbox" id="learnedChkTop"> OK</label>
+
+    <button id="topBtn" title="トップ">TOP</button>
+    <button id="resetBtn" title="学習状態をクリア">reset</button>
   </div>
 </header>
+
+<!-- 左サイド：ページリスト -->
+<aside class="side" id="sidebar">
+  <div class="side-head">
+    <select id="jumpSel" class="jump" title="ショートカット（50ごと/見出し）"></select>
+    <button id="closeSide">×</button>
+  </div>
+  <div class="current-pin" id="pinCur" style="display:none"></div>
+  <div class="side-body">
+    <ul class="list" id="wordList"></ul>
+  </div>
+</aside>
 
 <div class="wrap">
   <div class="card" id="card">
@@ -71,21 +139,27 @@
 </footer>
 
 <script>
-// ===== 設定 =====
+/* ===== 設定 ===== */
 const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
-const SOZAI_BASE_URL = API_URL + "sozai/"; // ← /cards/sozai/ に修正
+const SOZAI_BASE_URL = API_URL + "sozai/";
 const FRONT_PREFER = ["英単語","単語","word","Word"];
 const YT_MODE = (location.protocol === "file:") ? "link" : "auto";
-// =================
+/* =============== */
 
 const SHEET = new URLSearchParams(location.search).get("sheet") || "";
-document.getElementById("title").textContent = SHEET || "Card";
+document.getElementById("pageName").textContent = SHEET || "Card";
 const KEY_PREFIX = `cards:${SHEET}:`;
 const FRONT_STORE_KEY = `cards:${SHEET}:frontCol`;
+const HEADING_KEY = `cards:${SHEET}:headings`;  // 手動見出しのインデックス配列を保存
 
 const getKey  = w => KEY_PREFIX + w;
 const isLearn = w => localStorage.getItem(getKey(w)) === "1";
 const setLearn = (w,v) => v ? localStorage.setItem(getKey(w),"1") : localStorage.removeItem(getKey(w));
+
+const loadHeadings = ()=> {
+  try{ return JSON.parse(localStorage.getItem(HEADING_KEY)||"[]"); }catch{ return []; }
+};
+const saveHeadings = (arr)=> localStorage.setItem(HEADING_KEY, JSON.stringify([...new Set(arr)].sort((a,b)=>a-b)));
 
 let rowsAll = [];
 let headers = [];
@@ -102,10 +176,17 @@ const el = {
   learnedTop: $("learnedChkTop"),
   hide: $("hideLearned"),
   frontSel: $("frontSelect"),
-  count: $("count")
+  count: $("count"),
+  sidebar: $("sidebar"),
+  listBtn: $("listBtn"),
+  closeSide: $("closeSide"),
+  wordList: $("wordList"),
+  jumpSel: $("jumpSel"),
+  pinCur: $("pinCur"),
+  markHeading: $("markHeading"),
 };
 
-// ========= ヘルパー =========
+/* ========= ヘルパー ========= */
 function hasExt(u){ return /\.[a-z0-9]{2,5}(\?|$)/i.test(u||""); }
 function isLocalLike(u){
   if(!u) return false;
@@ -113,25 +194,18 @@ function isLocalLike(u){
   if(/^data:/i.test(u)) return false;
   return true;
 }
-
-// /sozai 省略入力を Cloud Storage の cards/sozai/ に自動マップ
 function resolveSozaiPath(u){
   if(!u) return "";
   let s = String(u).trim();
   if(!s) return s;
-
   s = s.replace(/^[\s,;:()［］【】「」『』“”'"。．、]+|[\s,;:()［］【】「」『』“”'"。．、]+$/g, "");
-
   if(!isLocalLike(s)) return s;
-
-  if(s.includes("sozai/")) s = s.split("/").pop(); // 旧形式をファイル名だけに
-
+  if(s.includes("sozai/")) s = s.split("/").pop();
   if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")){
     return SOZAI_BASE_URL + encodeURIComponent(s);
   }
   return s;
 }
-
 function isVideoUrl(u){ return /\.(mp4|webm|ogg|mkv)(\?|$)/i.test(u||""); }
 function isAudioUrl(u){ return /\.(mp3|m4a|aac|wav|ogg|opus)(\?|$)/i.test(u||""); }
 function isHttpUrl(u){ return /^https?:\/\//i.test(u || ""); }
@@ -141,14 +215,8 @@ function baseName(u){
     return x.split("/").pop() || x;
   }catch(_){ return u; }
 }
-function isYouTubeUrl(u){
-  return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(u||"");
-}
-function parseYouTubeId(u){
-  if(!u) return null;
-  const m = u.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/);
-  return m ? m[1] : null;
-}
+function isYouTubeUrl(u){ return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(u||""); }
+function parseYouTubeId(u){ const m = (u||"").match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/); return m ? m[1] : null; }
 function parseStartSeconds(u){
   try{
     const url = new URL(u, location.origin);
@@ -169,66 +237,50 @@ function ytEmbedUrl(u){
   const id = parseYouTubeId(u);
   if(!id) return "";
   const start = parseStartSeconds(u);
-  const params = new URLSearchParams();
-  if(start) params.set("start", String(start));
-  params.set("modestbranding", "1");
-  params.set("rel", "0");
-  params.set("playsinline", "1");
-  return `https://www.youtube-nocookie.com/embed/${id}${params.toString() ? "?" + params.toString() : ""}`;
+  const p = new URLSearchParams();
+  if(start) p.set("start", String(start));
+  p.set("modestbranding","1"); p.set("rel","0"); p.set("playsinline","1");
+  return `https://www.youtube-nocookie.com/embed/${id}${p.toString()?'?'+p.toString():''}`;
 }
 function ytWatchUrl(u){
-  const id = parseYouTubeId(u);
-  if(!id) return u;
+  const id = parseYouTubeId(u); if(!id) return u;
   const start = parseStartSeconds(u);
-  const p = new URLSearchParams(); p.set("v", id); if(start) p.set("t", String(start));
+  const p = new URLSearchParams(); p.set("v",id); if(start) p.set("t",String(start));
   return `https://www.youtube.com/watch?${p.toString()}`;
 }
-function ytThumbUrl(u){
-  const id = parseYouTubeId(u);
-  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "";
-}
+function ytThumbUrl(u){ const id = parseYouTubeId(u); return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : ""; }
 
 function extractGooglePhotosId(url){
-  const match1 = url.match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/);
-  if(match1) return match1[1];
-  const match2 = url.match(/photos\.app\.goo\.gl\/([A-Za-z0-9]+)/);
-  if(match2) return match2[1];
+  const m1 = (url||"").match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/);
+  if(m1) return m1[1];
+  const m2 = (url||"").match(/photos\.app\.goo\.gl\/([A-Za-z0-9]+)/);
+  if(m2) return m2[1];
   return null;
 }
 function getGooglePhotosDirectUrl(url){
   const id = extractGooglePhotosId(url);
-  if(id && id.startsWith("AF1Qip")){
-    return `https://lh3.googleusercontent.com/pw/${id}=w800`;
-  }
+  if(id && id.startsWith("AF1Qip")) return `https://lh3.googleusercontent.com/pw/${id}=w800`;
   return url;
 }
 function normalizeDrive(u){
   if(!u) return "";
   const first = String(u).trim().split(/[\s\n]+/)[0];
-  const patterns = [
+  const pats = [
     /drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/,
     /drive\.google\.com\/open\?id=([A-Za-z0-9_-]{10,})/,
     /docs\.google\.com\/.*?\/d\/([A-Za-z0-9_-]{10,})/,
     /drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]{10,})/
   ];
-  for(const p of patterns){
-    const m = first.match(p);
-    if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
-  }
+  for(const p of pats){ const m = first.match(p); if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`; }
   if(first.includes("/uc?export=download&id=")) return first;
   return first;
 }
-function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u || ""); }
+function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u||""); }
 function isImageUrl(u){
   if(!u) return false;
   const lower = u.toLowerCase();
   if(/\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(lower)) return true;
-  if(lower.includes("googleusercontent.com")) return true;
-  if(lower.includes("/uc?export=download&id=")) return true;
-  if(lower.includes("lh3.google")) return true;
-  if(lower.includes("imgur.com")) return true;
-  if(lower.includes("gyazo.com")) return true;
-  return false;
+  return ["googleusercontent.com","/uc?export=download&id=","lh3.google","imgur.com","gyazo.com"].some(s=>lower.includes(s));
 }
 function urlize(text){
   const re = /(https?:\/\/[^\s]+)/g;
@@ -236,11 +288,8 @@ function urlize(text){
   let last = 0, m;
   while((m = re.exec(text)) !== null){
     if(m.index > last) frag.append(document.createTextNode(text.slice(last, m.index)));
-    const a = document.createElement("a");
-    a.href = m[0]; a.textContent = m[0];
-    a.target = "_blank"; a.rel = "noopener"; a.className = "inline";
-    frag.append(a);
-    last = re.lastIndex;
+    const a = document.createElement("a"); a.href = m[0]; a.textContent = m[0]; a.target="_blank"; a.rel="noopener"; a.className="inline";
+    frag.append(a); last = re.lastIndex;
   }
   if(last < text.length) frag.append(document.createTextNode(text.slice(last)));
   return frag;
@@ -251,6 +300,7 @@ function pickInitialFront(headers){
   for(const c of FRONT_PREFER){ if(headers.includes(c)) return c; }
   return headers[0] || "";
 }
+
 function rebuildView(){
   const frontKey = el.frontSel.value;
   rowsView = rowsAll.filter(row => {
@@ -259,10 +309,11 @@ function rebuildView(){
   });
   if(rowsView.length === 0) idx = 0;
   else if(idx >= rowsView.length) idx = rowsView.length - 1;
-  el.count.textContent = `${rowsView.length ? idx+1 : 0} / ${rowsView.length}`;
+  el.count.textContent = `${rowsView.length ? idx+1 : 0}/${rowsView.length}`;
+  buildSidebar(); // 表示更新に合わせてリスト再構築
 }
 
-// ========= YouTube描画（埋め込み＋フォールバック） =========
+/* ========= YouTube描画 ========= */
 function renderYouTube(sec, urlOriginal){
   const embed = ytEmbedUrl(urlOriginal);
   const watch = ytWatchUrl(urlOriginal);
@@ -270,48 +321,34 @@ function renderYouTube(sec, urlOriginal){
 
   if(YT_MODE === "link" || !embed){
     const fb = document.createElement("div");
-    fb.className = "yt-fallback";
+    fb.style.position="relative"; fb.style.width="100%"; fb.style.aspectRatio="16/9"; fb.style.border="1px solid var(--border)"; fb.style.borderRadius="10px"; fb.style.overflow="hidden"; fb.style.background="#000";
     if(thumb){
       const img = document.createElement("img");
-      img.src = thumb; img.alt = "YouTube Thumbnail"; img.loading = "lazy";
+      img.src = thumb; img.alt = "YouTube Thumbnail"; img.loading = "lazy"; img.style.width="100%"; img.style.height="100%"; img.style.objectFit="cover";
       fb.appendChild(img);
     }
     const a = document.createElement("a");
-    a.href = watch; a.target = "_blank"; a.rel = "noopener";
-    a.className = "play";
-    a.innerHTML = "▶ YouTubeで再生";
+    a.href = watch; a.target="_blank"; a.rel="noopener";
+    a.style.position="absolute"; a.style.inset="0"; a.style.display="flex"; a.style.alignItems="center"; a.style.justifyContent="center"; a.style.color="#fff"; a.style.textDecoration="none"; a.style.fontWeight="700";
+    a.textContent = "▶ YouTubeで再生";
     fb.appendChild(a);
-    const hint = document.createElement("div");
-    hint.className = "hint";
-    hint.textContent = "クリックで開く";
-    fb.appendChild(hint);
     sec.appendChild(fb);
     return;
   }
 
-  const box = document.createElement("div");
-  box.className = "yt";
+  const box = document.createElement("div"); box.style.position="relative"; box.style.width="100%"; box.style.aspectRatio="16/9";
   const iframe = document.createElement("iframe");
-  iframe.src = embed;
-  iframe.loading = "lazy";
-  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-  iframe.setAttribute("allowfullscreen", "");
+  iframe.src = embed; iframe.loading="lazy"; iframe.allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"; iframe.setAttribute("allowfullscreen","");
+  iframe.style.position="absolute"; iframe.style.inset="0"; iframe.style.width="100%"; iframe.style.height="100%"; iframe.style.border="0";
 
-  const under = document.createElement("div");
-  under.className = "muted";
-  under.style.marginTop = "6px";
-  const link = document.createElement("a");
-  link.href = watch; link.target = "_blank"; link.rel = "noopener";
-  link.textContent = "YouTubeで開く";
-  link.className = "inline";
+  const under = document.createElement("div"); under.className="muted"; under.style.marginTop="6px";
+  const link = document.createElement("a"); link.href = watch; link.target="_blank"; link.rel="noopener"; link.textContent = "YouTubeで開く"; link.className="inline";
   under.appendChild(link);
 
-  box.appendChild(iframe);
-  sec.appendChild(box);
-  sec.appendChild(under);
+  box.appendChild(iframe); sec.appendChild(box); sec.appendChild(under);
 }
 
-// ========= 裏面描画 =========
+/* ========= 裏面描画 ========= */
 function renderBack(row){
   el.backBox.innerHTML = "";
   const frontKey = el.frontSel.value;
@@ -321,20 +358,11 @@ function renderBack(row){
     const raw = row[key];
     if(!raw) return;
 
-    const sec = document.createElement("div");
-    sec.className = "section";
-    const title = document.createElement("p");
-    title.className = "sec-title";
-    title.textContent = key;
-    sec.appendChild(title);
+    const sec = document.createElement("div"); sec.className = "section";
+    const title = document.createElement("p"); title.className = "sec-title"; title.textContent = key; sec.appendChild(title);
 
     const val = String(raw).trim();
-
-    // 改行・カンマ・タブで分割（バグ修正: \t）
-    const tokens = val
-      .split(/[\n,、]+|\t+/)
-      .map(s => s.trim())
-      .filter(Boolean);
+    const tokens = val.split(/[\n,、]+|\t+/).map(s=>s.trim()).filter(Boolean);
 
     let hasMedia = false;
     let remainingText = val;
@@ -343,127 +371,124 @@ function renderBack(row){
       if(!tok) return;
       let resolved = resolveSozaiPath(tok);
 
-      // YouTube
-      if(isYouTubeUrl(resolved)){
-        renderYouTube(sec, resolved);
-        hasMedia = true;
-        remainingText = remainingText.replace(tok, "").trim();
-        return;
-      }
-
-      // Google Photos
+      if(isYouTubeUrl(resolved)){ renderYouTube(sec, resolved); hasMedia = true; remainingText = remainingText.replace(tok,"").trim(); return; }
       if(isGooglePhotosUrl(resolved)){
-        const img = document.createElement("img");
-        img.className = "cardimg";
-        img.src = getGooglePhotosDirectUrl(resolved);
-        img.alt = key;
-        img.loading = "lazy";
-        img.onerror = function(){
-          this.style.display='none';
-          const err=document.createElement("div");
-          err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`;
-          err.style.color="#999";err.style.fontSize="12px";
-          this.parentNode.insertBefore(err,this);
-        };
-        sec.appendChild(img);
-        hasMedia=true;
-        remainingText=remainingText.replace(tok,"").trim();
-        return;
+        const img = document.createElement("img"); img.className="cardimg"; img.src=getGooglePhotosDirectUrl(resolved); img.alt=key; img.loading="lazy";
+        img.onerror=function(){ this.style.display='none'; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.className="muted"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
+        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
-
-      // HTTP → Drive直リンク化
       if(isHttpUrl(resolved)) resolved = normalizeDrive(resolved);
 
-      // 画像
       if(isImageUrl(resolved)){
-        const img=document.createElement("img");
-        img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
-        img.onerror=function(){
-          this.style.display="none";
-          const err=document.createElement("div");
-          err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`;
-          err.style.color="#999";err.style.fontSize="12px";
-          this.parentNode.insertBefore(err,this);
-        };
-        sec.appendChild(img);
-        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+        const img=document.createElement("img"); img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
+        img.onerror=function(){ this.style.display='none'; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.className="muted"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
+        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
-
-      // 音声（下にファイル名）
       if(isAudioUrl(resolved)){
-        const audio=document.createElement("audio");
-        audio.controls=true; audio.src=resolved;
-        audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
-        sec.appendChild(audio);
-        const cap=document.createElement("div");
-        cap.className="muted"; cap.textContent=baseName(resolved);
-        sec.appendChild(cap);
+        const audio=document.createElement("audio"); audio.controls=true; audio.src=resolved; audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
+        sec.appendChild(audio); const cap=document.createElement("div"); cap.className="muted"; cap.textContent=baseName(resolved); sec.appendChild(cap);
         hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
-
-      // 動画（下にファイル名）
       if(isVideoUrl(resolved)){
-        const video=document.createElement("video");
-        video.controls=true; video.src=resolved;
-        video.style.width="100%"; video.style.margin="8px 0";
-        sec.appendChild(video);
-        const cap=document.createElement("div");
-        cap.className="muted"; cap.textContent=baseName(resolved);
-        sec.appendChild(cap);
+        const video=document.createElement("video"); video.controls=true; video.src=resolved; video.style.width="100%"; video.style.margin="8px 0";
+        sec.appendChild(video); const cap=document.createElement("div"); cap.className="muted"; cap.textContent=baseName(resolved); sec.appendChild(cap);
         hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
       }
     });
 
     if(remainingText && remainingText.trim()){
-      const body=document.createElement("div");
-      body.className="sec-body";
-      if(remainingText.includes("http")) body.appendChild(urlize(remainingText));
-      else body.textContent=remainingText;
+      const body=document.createElement("div"); body.className="sec-body";
+      if(remainingText.includes("http")) body.appendChild(urlize(remainingText)); else body.textContent=remainingText;
       sec.appendChild(body);
     }
-
     if(!hasMedia && !remainingText.trim() && val){
-      const body=document.createElement("div");
-      body.className="sec-body"; body.appendChild(urlize(val)); sec.appendChild(body);
+      const body=document.createElement("div"); body.className="sec-body"; body.appendChild(urlize(val)); sec.appendChild(body);
     }
 
     el.backBox.appendChild(sec);
   });
 }
 
-// ========= 表示処理 =========
+/* ========= 表示処理 ========= */
 function render(){
   if(rowsView.length===0){
     el.front.textContent="表示できるカードがありません";
     el.back.style.display="none"; el.front.style.display="block";
-    el.learnedTop.checked=false; el.count.textContent=`0 / 0`; return;
+    el.learnedTop.checked=false; el.count.textContent=`0/0`; el.pinCur.style.display="none";
+    return;
   }
   const frontKey=el.frontSel.value;
   const row=rowsView[idx];
   const frontText=String(row[frontKey]??"(no value)");
-  if(showBack){
-    el.front.style.display="none"; el.back.style.display="block";
-    renderBack(row);
-    el.learnedTop.checked=isLearn(frontText);
-  }else{
-    el.back.style.display="none"; el.front.style.display="block";
-    el.front.textContent=frontText;
-  }
-  el.count.textContent=`${idx+1} / ${rowsView.length}`;
+  if(showBack){ el.front.style.display="none"; el.back.style.display="block"; renderBack(row); el.learnedTop.checked=isLearn(frontText); }
+  else{ el.back.style.display="none"; el.front.style.display="block"; el.front.textContent=frontText; }
+  el.count.textContent=`${idx+1}/${rowsView.length}`;
+  // 現在語をピン固定に
+  el.pinCur.textContent = frontText;
+  el.pinCur.style.display = "block";
+  // 見チェックを反映
+  const globalIndex = rowsAll.findIndex(r => String(r[frontKey]??"") === frontText);
+  el.markHeading.checked = loadHeadings().includes(globalIndex);
+  // サイドの選択状態を更新
+  markSidebarCurrent(frontText);
 }
 
-// ========= ナビ =========
-function next(){ if(!rowsView.length) return; if(!showBack){showBack=true;render();}else{idx=(idx+1)%rowsView.length;showBack=false;render();} }
-function prev(){ if(!rowsView.length) return; if(showBack){showBack=false;render();}else{idx=(idx-1+rowsView.length)%rowsView.length;showBack=true;render();} }
-function flip(){ if(!rowsView.length) return; showBack=!showBack; render(); }
+/* ========= サイドバー（ページリスト） ========= */
+function buildSidebar(){
+  const frontKey = el.frontSel.value;
+  const UL = el.wordList; UL.innerHTML = "";
+  const headings = loadHeadings();
 
-// ========= データ取得 =========
+  rowsView.forEach((row, i) => {
+    const w = String(row[frontKey] ?? "");
+    const li = document.createElement("li");
+    if(isLearn(w)) li.classList.add("is-learned");
+    li.dataset.word = w;
+    const idxSpan = document.createElement("span"); idxSpan.className="idx"; idxSpan.textContent = String(i+1).padStart(2,"0");
+    const txt = document.createElement("span"); txt.textContent = w;
+    li.append(idxSpan, txt);
+    li.addEventListener("click", ()=>{ idx = i; showBack=false; render(); });
+    UL.appendChild(li);
+  });
+
+  // ショートカット（50ごと＋手動見出し）
+  const jump = el.jumpSel; jump.innerHTML = "";
+  const opt0 = document.createElement("option"); opt0.textContent = "ショートカット"; opt0.value = "";
+  jump.appendChild(opt0);
+
+  for(let i=51;i<=rowsAll.length;i+=50){
+    const o=document.createElement("option"); o.value=String(i-1); o.textContent = `No.${i}`;
+    jump.appendChild(o);
+  }
+  headings.forEach(h=>{
+    if(h>=0 && h<rowsAll.length){
+      const word = String(rowsAll[h][frontKey] ?? `No.${h+1}`);
+      const o=document.createElement("option");
+      o.value=String(h); o.textContent=`★ ${h+1}: ${word}`;
+      jump.appendChild(o);
+    }
+  });
+
+  jump.onchange = ()=>{
+    const v = jump.value;
+    if(v==="") return;
+    // v は rowsAll のインデックス。表示中配列 rowsView の同語へ飛ぶ
+    const targetWord = String(rowsAll[Number(v)][frontKey] ?? "");
+    const j = rowsView.findIndex(r => String(r[frontKey]??"") === targetWord);
+    if(j>=0){ idx=j; showBack=false; render(); }
+  };
+}
+
+function markSidebarCurrent(word){
+  [...el.wordList.children].forEach(li=>{
+    if(li.dataset.word === word) li.classList.add("is-cur"); else li.classList.remove("is-cur");
+  });
+}
+
+/* ========= データ取得 ========= */
 async function load(){
   try{
-    if (!SHEET) {
-      el.front.textContent = "URLに ?sheet=シート名 を指定してください";
-      return;
-    }
+    if (!SHEET) { el.front.textContent = "URLに ?sheet=シート名 を指定してください"; return; }
     const jsonUrl = API_URL + encodeURIComponent(SHEET) + ".json";
     const res = await fetch(jsonUrl, {cache:"no-store"});
     if (!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
@@ -473,10 +498,7 @@ async function load(){
     headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
 
     el.frontSel.innerHTML = "";
-    headers.forEach(k => {
-      const opt = document.createElement("option");
-      opt.value = k; opt.textContent = k; el.frontSel.appendChild(opt);
-    });
+    headers.forEach(k => { const opt = document.createElement("option"); opt.value = k; opt.textContent = k; el.frontSel.appendChild(opt); });
 
     const initial = pickInitialFront(headers);
     el.frontSel.value = initial;
@@ -493,7 +515,7 @@ async function load(){
   }
 }
 
-// ========= イベント =========
+/* ========= イベント ========= */
 el.learnedTop.addEventListener("change", (ev) => {
   if(!rowsView.length) return;
   const w = String(rowsView[idx][el.frontSel.value] ?? "");
@@ -505,49 +527,57 @@ el.learnedTop.addEventListener("change", (ev) => {
   render();
 });
 
-el.hide.addEventListener("change", () => {
-  rebuildView();
-  render();
-});
+el.hide.addEventListener("change", () => { rebuildView(); render(); });
 
 $("resetBtn").addEventListener("click", () => {
   if(!confirm("このカードセットの学習フラグを全て消します。よろしいですか？")) return;
   Object.keys(localStorage).forEach(k => { if(k.startsWith(KEY_PREFIX)) localStorage.removeItem(k); });
-  rebuildView();
-  render();
+  saveHeadings([]); // 見出しも消す
+  rebuildView(); render();
 });
+
+$("topBtn").addEventListener("click", ()=> location.href='index.html');
 
 el.frontSel.addEventListener("change", () => {
   localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value);
-  rebuildView();
-  showBack = false;
-  render();
+  rebuildView(); showBack = false; render();
 });
 
-// ボタン
-$("prevBtn").addEventListener("click", prev);
-$("nextBtn").addEventListener("click", next);
-$("flipBtn").addEventListener("click", flip);
+// 見出しトグル
+el.markHeading.addEventListener("change", ()=>{
+  if(!rowsView.length) return;
+  const frontKey = el.frontSel.value;
+  const word = String(rowsView[idx][frontKey] ?? "");
+  const gidx = rowsAll.findIndex(r => String(r[frontKey]??"") === word);
+  let hs = loadHeadings();
+  if(el.markHeading.checked){ hs.push(gidx); }
+  else{ hs = hs.filter(x=>x!==gidx); }
+  saveHeadings(hs);
+  buildSidebar();
+});
+
+// サイドの開閉
+el.listBtn.addEventListener("click", ()=> el.sidebar.classList.add("open"));
+el.closeSide.addEventListener("click", ()=> el.sidebar.classList.remove("open"));
+
+/* ボタン */
+$("prevBtn").addEventListener("click", ()=>{ if(!rowsView.length) return; if(showBack){showBack=false;render();}else{idx=(idx-1+rowsView.length)%rowsView.length;showBack=true;render();} });
+$("nextBtn").addEventListener("click", ()=>{ if(!rowsView.length) return; if(!showBack){showBack=true;render();}else{idx=(idx+1)%rowsView.length;showBack=false;render();} });
+$("flipBtn").addEventListener("click", ()=>{ if(!rowsView.length) return; showBack=!showBack; render(); });
 
 $("shuffleBtn").addEventListener("click", () => {
-  for(let i = rowsView.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [rowsView[i], rowsView[j]] = [rowsView[j], rowsView[i]];
-  }
-  idx = 0;
-  showBack = false;
-  render();
+  for(let i = rowsView.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [rowsView[i], rowsView[j]] = [rowsView[j], rowsView[i]]; }
+  idx = 0; showBack = false; render();
 });
-
 $("pauseBtn").addEventListener("click", () => { if(lastAudio) lastAudio.pause(); });
 $("replayBtn").addEventListener("click", () => { if(lastAudio){ lastAudio.currentTime = 0; lastAudio.play(); } });
 
-// キーボード
+/* キーボード（必要ならトップに操作説明を追記） */
 document.addEventListener("keydown", (e) => {
   if(e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-  if(e.key === "ArrowRight") next();
-  else if(e.key === "ArrowLeft") prev();
-  else if(e.key === " ") { e.preventDefault(); flip(); }
+  if(e.key === "ArrowRight") {$("nextBtn").click();}
+  else if(e.key === "ArrowLeft") {$("prevBtn").click();}
+  else if(e.key === " ") { e.preventDefault(); $("flipBtn").click(); }
   else if(e.key.toLowerCase() === "l") { el.learnedTop.checked = !el.learnedTop.checked; el.learnedTop.dispatchEvent(new Event("change")); }
 });
 
