@@ -3,259 +3,203 @@
 <head>
 <meta charset="UTF-8" />
 <title>Card</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <style>
-  /* ================================
-     # コンセプト / 変更点メモ
-     - 上バーを 1 行に統合（順序: 「1/4」, List, Top, [表の列], [OK/非/交/見]）
-     - List で左ペインを開閉。ペイン上段のみ（ページ名 / 見出しセレクト / Close）。選択＝即ジャンプ
-     - 下バーはボタンを横幅 2.2 倍。配色は明るいグレー系のアウトライン＋白文字。ダブルタップ拡大を抑制
-     - 「交」…表裏を 1 セットとして各単語をシャッフル（「非」が ON なら表示対象だけがシャッフル）
-     - カードの外枠や影は完全撤去（地のアウトラインなし）
-     - Safari でヘッダ直下に 1 行だけテキストが“薄く固定”される事象を margin-collapsing 回避と z-index/overflow で抑止
-     - ここから下の CSS 変数値をいじるだけでサイズ調整可能
-     ================================ */
+  /* =========================================
+     # コンセプト / 学習者向けメモ
+     - 上バーを1行に収め、右側に「表ドロップダウン + 4つのチェック(OK/非/交/見)」をコンパクト配置
+     - 左ペインは A列(シート最左列)のみを見出し/リストに使用し、表面の選択に影響されない
+     - 下バーは操作時にズームしないよう touch-action を指定。幅は CSS 変数で調整可能
+       → --nav-btn-w を変えるとボタン横幅が変わります（例: 120px → 180px）
+     ========================================= */
 
+  *{box-sizing:border-box}
   :root{
     --pad:14px;
-    /* #下タブのボタン寸法：ここを変えると一括で大きさが変わります */
-    --nav-btn-h:54px;      /* 高さ */
-    --nav-btn-w:160px;     /* 横幅（既存比 ≈2.2倍） */
-    --nav-gap:12px;        /* ボタン間の隙間 */
-    --nav-radius:14px;     /* 角丸 */
-    /* 上バー高さ（内部で自動マージン潰れ対策に利用） */
-    --header-pad-y:10px;
+    --nav-btn-w: 180px; /* ← #ここの数字を変えたら下部ボタン横幅が変わりますよ */
+    --nav-btn-h: 52px;  /* ← #ここで下部ボタンの高さ */
+    --pill-h: 34px;     /* ← #上バーのピル高さ */
   }
 
-  *{ box-sizing:border-box }
-
-  html,body{ height:100% }
-  body{
-    margin:0;
-    padding-bottom: calc(var(--nav-btn-h) + 24px + env(safe-area-inset-bottom));
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", sans-serif;
-    background:#0f1115; color:#e9edf1;
-    /* iOS のダブルタップ拡大を減らす */
-    touch-action: manipulation;
-    overflow-x:hidden;
-  }
-
-  /* ダーク/ライト自動 */
   @media (prefers-color-scheme: light){
-    body{ background:#fafafa; color:#0c0d10 }
+    body{background:#fafafa;color:#111}
+    header, .side, footer.nav{background:#fff;border-color:#ddd}
+    .pill{ background:#f3f4f6; border:1px solid #ddd; color:#111 }
+    .pill:focus{outline:2px solid #9ac1ff; outline-offset:1px}
+    .side-select{ border-color:#ddd }
+    .row.active{ background:#e9eefc; border-color:#cfe0ff }
+    .row.learned{ opacity:.45 }
+    .count{opacity:.7}
+  }
+  @media (prefers-color-scheme: dark){
+    body{background:#0f1318;color:#e8eaee}
+    header, .side, footer.nav{background:#121820;border-color:#2c3340}
+    .pill{ background:#1e2630; border:1px solid #2f3743; color:#e8eaee }
+    .pill:focus{outline:2px solid #3a7cff; outline-offset:1px}
+    .side-select{ border-color:rgba(255,255,255,.16) }
+    .row.active{ background:#1d2734; border-color:#365a86 }
+    .row.learned{ opacity:.45 }
+    .count{opacity:.7}
   }
 
-  /* ヘッダ（1 行、左右に流し込み） */
+  body{font-family:system-ui, -apple-system, Segoe UI, Roboto, 'ヒラギノ角ゴ Pro', 'Noto Sans JP', sans-serif;margin:0;padding-bottom:96px}
+
+  /* ---------- 上バー ---------- */
   header{
-    position:sticky; top:0; z-index:1000;
-    background:rgba(22,25,31,.92);
-    -webkit-backdrop-filter:saturate(1.1) blur(6px);
-    backdrop-filter:saturate(1.1) blur(6px);
-    border-bottom:1px solid rgba(255,255,255,.08);
-    padding: var(--header-pad-y) calc(var(--pad) + env(safe-area-inset-right)) var(--header-pad-y) calc(var(--pad) + env(safe-area-inset-left));
+    position:sticky;top:0;z-index:20;
+    border-bottom:1px solid; padding:8px var(--pad);
   }
-  @media (prefers-color-scheme: light){
-    header{ background:rgba(255,255,255,.92); border-bottom:1px solid #ddd }
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;overflow:auto}
+  .count{white-space:nowrap;min-width:44px}
+  .btn{height:var(--pill-h); padding:0 14px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; border:1px solid transparent; cursor:pointer; user-select:none}
+  .pill{height:var(--pill-h); border-radius:14px}
+  .btn.small{padding:0 12px}
+  select.pill{padding:0 28px 0 12px; appearance:none; background-image:linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: right 10px top 45%, right 6px top 45%; background-size:6px 6px; background-repeat:no-repeat}
+  .cb{display:inline-flex; align-items:center; gap:6px; white-space:nowrap}
+
+  /* ---------- レイアウト ---------- */
+  .layout{display:flex; gap:10px}
+  .side{
+    width:320px; flex:0 0 320px; border-right:1px solid; padding:10px; position:fixed; inset:48px auto 96px 0; z-index:15; transform:translateX(-100%); transition:transform .18s ease;
   }
+  .side.open{ transform:none }
+  .side-head{display:flex; align-items:center; gap:10px; margin-bottom:8px}
+  .side-title{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .grow{flex:1}
+  .side-select{ height:34px; border:1px solid; background:transparent; color:inherit; border-radius:14px; padding:0 14px }
+  .list{ margin:10px 0 0; display:flex; flex-direction:column; gap:4px }  /* 行間を詰めた */
+  .row{ padding:6px 9px; gap:6px; border-radius:10px; cursor:pointer; display:flex; align-items:center; border:1px solid transparent }
+  .row:hover{ filter:brightness(1.06) }
 
-  .toprow{
-    display:flex; align-items:center; gap:10px; flex-wrap:nowrap;
-    overflow:hidden;
-  }
-  .grow{ flex:1 1 auto; min-width:0 }
+  .wrap{max-width:min(1160px, 96vw); margin:0 auto; padding:var(--pad)}
+  .card{border-radius:20px; padding:16px; min-height:220px}
 
-  .count{ opacity:.9; white-space:nowrap }
+  .front{font-size:clamp(26px, 6vw, 40px); font-weight:800; letter-spacing:.3px}
+  .back .section{margin:10px 0}
+  .sec-title{font-size:12px;opacity:.65;margin:0 0 4px}
+  .sec-body{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  audio,video{width:100%;margin:8px 0}
+  img.cardimg{width:100%;height:auto;border-radius:12px;object-fit:contain;background:#0b0e12;margin:8px 0;max-height:420px;border:1px solid rgba(255,255,255,.06)}
+  a.inline{word-break:break-all}
+  a.inline:hover{text-decoration:underline}
 
-  /* コンパクト pill ボタン/セレクト/チェック */
-  .pill{ height:34px; padding:0 14px; border:1px solid rgba(255,255,255,.16); background:transparent; color:inherit; border-radius:14px; font-size:15px; line-height:34px }
-  .pill:focus{ outline:2px solid rgba(90,140,255,.5); outline-offset:2px }
-  select.pill{ padding-right:28px }
-  .btn{ cursor:pointer; user-select:none; }
-  .btn:active{ transform:translateY(1px) }
-
-  /* チェックボックスをコンパクト表示 */
-  .chk{
-    display:inline-flex; align-items:center; gap:6px; margin-left:6px; white-space:nowrap;
-    font-size:14px;
-  }
-  .chk input{ width:18px; height:18px; }
-
-  /* 左サイドペイン */
-  aside#side{
-    position:fixed; top:0; left:0; bottom:0; width:min(340px, 86vw);
-    background:rgba(18,20,26,.98);
-    -webkit-backdrop-filter:saturate(1.2) blur(8px);
-    backdrop-filter:saturate(1.2) blur(8px);
-    border-right:1px solid rgba(255,255,255,.08);
-    transform:translateX(-100%); transition:transform .22s ease;
-    z-index:1100; overflow:auto;
-    padding:12px;
-  }
-  @media (prefers-color-scheme: light){
-    aside#side{ background:rgba(255,255,255,.98); border-right:1px solid #ddd }
-  }
-  body.side-open aside#side{ transform:none }
-
-  .side-head{ display:flex; align-items:center; gap:8px; }
-  .side-title{ font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-  .side-actions{ margin-left:auto; display:flex; gap:8px }
-  .side-select{ height:32px; border-radius:10px; padding:0 12px }
-
-  .list{ margin:10px 0 0; display:flex; flex-direction:column; gap:6px }
-  .row{
-    display:flex; align-items:center; gap:8px;
-    padding:8px 10px; border-radius:10px; cursor:pointer;
-  }
-  .row.learned{ opacity:.45 }
-  .row.active{ background:rgba(255,255,255,.08) }
-  .row:hover{ background:rgba(255,255,255,.06) }
-  @media (prefers-color-scheme: light){
-    .row.active{ background:rgba(0,0,0,.06) }
-    .row:hover { background:rgba(0,0,0,.04) }
-  }
-
-  /* メイン領域 */
-  .wrap{
-    max-width:980px; margin:0 auto; padding:8px var(--pad);
-    /* ヘッダ直下にテキストの“1行ゴースト”が見えるのを抑止 */
-    overflow:visible;
-  }
-
-  /* カードの地（アウトライン/影 なし） */
-  .card{ padding: 14px; border-radius:16px }
-  .front{ font-size: clamp(28px, 6.2vw, 44px); font-weight:800; letter-spacing:.2px; line-height:1.2 }
-
-  /* 裏面 */
-  .back .section{ margin:10px 0 }
-  .sec-title{ font-size:12px; opacity:.7; margin:0 0 4px }
-  .sec-body{ font-size:16px; line-height:1.6; white-space:pre-wrap; word-break:break-word }
-
-  img.cardimg{ width:100%; height:auto; border-radius:10px; object-fit:contain; background:#111; margin:8px 0; max-height:62vh }
-  audio,video{ width:100%; margin:8px 0 }
-
-  a.inline{ word-break:break-all; color:#6aa8ff; text-decoration:none }
-  a.inline:hover{ text-decoration:underline }
-
-  /* 下ナビ */
+  /* ---------- 下バー ---------- */
   footer.nav{
-    position:fixed; left:0; right:0; bottom:0; z-index:1000;
-    padding:10px calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
-    background:rgba(22,25,31,.92);
-    -webkit-backdrop-filter:saturate(1.1) blur(6px);
-    backdrop-filter:saturate(1.1) blur(6px);
-    border-top:1px solid rgba(255,255,255,.08);
-    display:flex; gap:var(--nav-gap); justify-content:center; flex-wrap:nowrap;
+    position:fixed; left:0; right:0; bottom:0; border-top:1px solid; padding:10px;
+    display:flex; gap:12px; justify-content:center; flex-wrap:nowrap;
+    touch-action:manipulation;  /* ダブルタップでズームしない */
   }
-  @media (prefers-color-scheme: light){
-    footer.nav{ background:rgba(255,255,255,.92); border-top:1px solid #ddd }
-  }
-  .navbtn{
+  .nav .navbtn{
     min-width:var(--nav-btn-w); height:var(--nav-btn-h);
-    background:transparent; color:#fff; border-radius:var(--nav-radius);
-    border:2px solid rgba(255,255,255,.65); font-size:18px; font-weight:700;
-    letter-spacing:.05em; cursor:pointer; user-select:none;
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    touch-action: manipulation;
+    border-radius:14px; background:transparent; color:#fff; border:2px solid rgba(255,255,255,.55);
+    display:inline-flex; align-items:center; justify-content:center; font-size:18px; font-weight:700;
   }
-  @media (prefers-color-scheme: light){
-    .navbtn{ color:#111; border-color:rgba(0,0,0,.6) }
+  .nav .navbtn:hover{ filter:brightness(1.1) }
+  .nav .navbtn:active{ transform:translateY(1px) }
+  .nav .navbtn span{pointer-events:none}
+
+  @media (max-width: 480px){
+    .side{ width:80vw; flex:0 0 80vw }
+    .btn.small{padding:0 10px}
+    :root{ --nav-btn-w: 150px; --nav-btn-h: 50px }  /* スマホは少しだけ控えめに */
   }
-  .navbtn:active{ transform: translateY(1px) }
-
-  /* スクロール末尾の補助テキストを下バーに隠さないよう余白 */
-  .below-pad{ height: calc(var(--nav-btn-h) + 28px) }
-
 </style>
 </head>
 <body>
-  <aside id="side" aria-label="ページリスト">
-    <div class="side-head">
-      <div class="side-title" id="sideTitle">ページ</div>
-      <div class="side-actions">
-        <select id="jumpHead" class="side-select" title="見出しへジャンプ"></select>
-        <button id="closeSide" class="pill btn">Close</button>
-      </div>
-    </div>
-    <div id="sideList" class="list"></div>
-    <div class="below-pad"></div>
-  </aside>
+<header>
+  <div class="topbar" id="topbar">
+    <div class="count" id="count">0/0</div>
 
-  <header>
-    <div class="toprow">
-      <div class="count" id="count">0 / 0</div>
+    <button class="btn pill small" id="listBtn">List</button>
+    <button class="btn pill small" id="topBtn" onclick="location.href='index.html'">Top</button>
 
-      <button id="listBtn" class="pill btn">List</button>
-      <button id="topBtn"  class="pill btn" onclick="location.href='index.html'">Top</button>
+    <select id="frontSelect" class="pill"></select>
 
-      <div class="grow"></div>
-
-      <select id="frontSelect" class="pill" title="表にする列"></select>
-
-      <label class="chk"><input type="checkbox" id="okChk"> OK</label>
-      <label class="chk"><input type="checkbox" id="hideLearned" checked> 非</label>
-      <label class="chk"><input type="checkbox" id="pairShuffle"> 交</label>
-      <label class="chk"><input type="checkbox" id="learnedChkTop"> 見</label>
-    </div>
-  </header>
-
-  <div class="wrap">
-    <div id="card" class="card">
-      <div id="front" class="front">読み込み中…</div>
-      <div id="back" class="back" style="display:none">
-        <div id="backContainer"></div>
-      </div>
-    </div>
-    <!-- 下バーに隠れがちなフッタ相当の余白 -->
-    <div class="below-pad"></div>
+    <label class="cb"><input type="checkbox" id="okChk"> OK</label>
+    <label class="cb"><input type="checkbox" id="hideChk" checked> 非</label>
+    <label class="cb"><input type="checkbox" id="crossChk"> 交</label>
+    <label class="cb"><input type="checkbox" id="headChk"> 見</label>
   </div>
+</header>
 
-  <footer class="nav">
-    <!-- #下タブのサイズは CSS 変数 --nav-btn-w / --nav-btn-h を変更してください -->
-    <button id="prevBtn" class="navbtn" aria-label="前へ">◀ 前</button>
-    <button id="nextBtn" class="navbtn" aria-label="次へ">次 ▶</button>
-  </footer>
+<aside class="side" id="sidebar">
+  <div class="side-head">
+    <div class="side-title" id="sideTitle">ページ</div>
+    <div class="grow"></div>
+    <select id="jumpHead" class="side-select pill" title="見出しへジャンプ"></select>
+    <button class="btn pill small" id="closeSide">Close</button>
+  </div>
+  <div class="list" id="sideList"></div>
+</aside>
+
+<div class="wrap">
+  <div class="card" id="card">
+    <div id="front" class="front">読み込み中…</div>
+    <div id="back" class="back" style="display:none">
+      <div id="backContainer"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="nav">
+  <button id="prevBtn" class="navbtn"><span>◀ 前</span></button>
+  <button id="nextBtn" class="navbtn"><span>次 ▶</span></button>
+</footer>
 
 <script>
-/* ========= 設定 ========= */
+/* ===== 設定 ===== */
 const API_URL = "https://storage.googleapis.com/works2511-f9693.firebasestorage.app/cards/";
 const SOZAI_BASE_URL = API_URL + "sozai/";
 const FRONT_PREFER = ["英単語","単語","word","Word"];
 const YT_MODE = (location.protocol === "file:") ? "link" : "auto";
-/* ======================= */
+/* ================= */
 
-const SHEET = new URLSearchParams(location.search).get("sheet") || "";
-const KEY_PREFIX = `cards:${SHEET}:`;
-const FRONT_STORE_KEY = `cards:${SHEET}:frontCol`;
+const Q = new URLSearchParams(location.search);
+const SHEET = Q.get("sheet") || "";
+const PAGE_NAME = Q.get("title") || Q.get("pagename") || SHEET || document.title;
+document.title = PAGE_NAME;
+
+const KEY_PREFIX = `cards:${SHEET || PAGE_NAME}:`;
+const FRONT_STORE_KEY = `cards:${SHEET || PAGE_NAME}:frontCol`;
+const getKey  = w => KEY_PREFIX + w;
+const isLearn = w => localStorage.getItem(getKey("LEARN:"+w)) === "1";
+const setLearn = (w,v) => v ? localStorage.setItem(getKey("LEARN:"+w),"1") : localStorage.removeItem(getKey("LEARN:"+w));
+const isHead = w => localStorage.getItem(getKey("HEAD:"+w)) === "1";
+const setHead = (w,v) => v ? localStorage.setItem(getKey("HEAD:"+w),"1") : localStorage.removeItem(getKey("HEAD:"+w));
+
+let rowsAll = [];
+let headers = [];
+let BASE_KEY = "";          // A列
+let rowsView = [];
+let rowsViewShuffled = [];
+let idx = 0;
+let showBack = false;
+let lastAudio = null;
 
 const $ = id => document.getElementById(id);
 const el = {
   front: $("front"),
   back: $("back"),
   backBox: $("backContainer"),
-  learnedTop: $("learnedChkTop"),
-  hide: $("hideLearned"),
   frontSel: $("frontSelect"),
   count: $("count"),
-  pair: $("pairShuffle"),
   ok: $("okChk"),
-  listBtn: $("listBtn"),
-  side: $("side"),
+  hide: $("hideChk"),
+  cross: $("crossChk"),
+  head: $("headChk"),
+  side: $("sidebar"),
   sideTitle: $("sideTitle"),
   sideList: $("sideList"),
   jumpHead: $("jumpHead"),
-  closeSide: $("closeSide"),
 };
 
-const getKey  = w => KEY_PREFIX + w;
-const isLearn = w => localStorage.getItem(getKey(w)) === "1";
-const setLearn = (w,v) => v ? localStorage.setItem(getKey(w),"1") : localStorage.removeItem(getKey(w));
-
-let rowsAll = [], headers = [], rowsView = [];
-let idx = 0, showBack = false, lastAudio = null;
-
-/* ========== ヘルパー（メディア/URL） ========== */
 function hasExt(u){ return /\.[a-z0-9]{2,5}(\?|$)/i.test(u||""); }
-function isLocalLike(u){ if(!u) return false; if(/^https?:\/\//i.test(u)) return false; if(/^data:/i.test(u)) return false; return true; }
+function isLocalLike(u){
+  if(!u) return false;
+  if(/^https?:\/\//i.test(u)) return false;
+  if(/^data:/i.test(u)) return false;
+  return true;
+}
 function resolveSozaiPath(u){
   if(!u) return "";
   let s = String(u).trim();
@@ -271,64 +215,113 @@ function resolveSozaiPath(u){
 function isVideoUrl(u){ return /\.(mp4|webm|ogg|mkv)(\?|$)/i.test(u||""); }
 function isAudioUrl(u){ return /\.(mp3|m4a|aac|wav|ogg|opus)(\?|$)/i.test(u||""); }
 function isHttpUrl(u){ return /^https?:\/\//i.test(u || ""); }
-function baseName(u){ try{ const x=(u||"").split("#")[0].split("?")[0]; return x.split("/").pop()||x; }catch{ return u } }
+function baseName(u){
+  try{
+    const x = (u||"").split("#")[0].split("?")[0];
+    return x.split("/").pop() || x;
+  }catch(_){ return u; }
+}
 function isYouTubeUrl(u){ return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(u||""); }
-function parseYouTubeId(u){ const m=(u||"").match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/); return m?m[1]:null; }
+function parseYouTubeId(u){
+  if(!u) return null;
+  const m = u.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : null;
+}
 function parseStartSeconds(u){
   try{
-    const url=new URL(u, location.origin);
+    const url = new URL(u, location.origin);
     const t = url.searchParams.get("t");
-    const s = url.searchParams.get("start");
-    const toSec = str=>{
-      if(!str) return 0; if(/^\d+$/.test(str)) return parseInt(str,10);
-      let sec=0; const m=str.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
-      if(m){ if(m[1]) sec+=+m[1]*3600; if(m[2]) sec+=+m[2]*60; if(m[3]) sec+=+m[3] }
+    const start = url.searchParams.get("start");
+    const toSec = (str)=>{
+      if(!str) return 0;
+      if(/^\d+$/.test(str)) return parseInt(str,10);
+      let sec = 0;
+      const m = str.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
+      if(m){ if(m[1]) sec += +m[1]*3600; if(m[2]) sec += +m[2]*60; if(m[3]) sec += +m[3]; }
       return sec;
     };
-    return s?toSec(s):toSec(t);
-  }catch{ return 0 }
+    return start ? toSec(start) : toSec(t);
+  }catch{ return 0; }
 }
 function ytEmbedUrl(u){
-  const id=parseYouTubeId(u); if(!id) return "";
-  const start=parseStartSeconds(u);
-  const p=new URLSearchParams(); if(start) p.set("start", String(start));
-  p.set("modestbranding","1"); p.set("rel","0"); p.set("playsinline","1");
-  return `https://www.youtube-nocookie.com/embed/${id}?${p.toString()}`;
+  const id = parseYouTubeId(u);
+  if(!id) return "";
+  const start = parseStartSeconds(u);
+  const params = new URLSearchParams();
+  if(start) params.set("start", String(start));
+  params.set("modestbranding", "1");
+  params.set("rel", "0");
+  params.set("playsinline", "1");
+  return `https://www.youtube-nocookie.com/embed/${id}${params.toString() ? "?" + params.toString() : ""}`;
 }
-function ytWatchUrl(u){ const id=parseYouTubeId(u); if(!id) return u; const start=parseStartSeconds(u); const p=new URLSearchParams(); p.set("v",id); if(start)p.set("t",String(start)); return `https://www.youtube.com/watch?${p.toString()}`; }
-function ytThumbUrl(u){ const id=parseYouTubeId(u); return id?`https://i.ytimg.com/vi/${id}/hqdefault.jpg`:""; }
-
+function ytWatchUrl(u){
+  const id = parseYouTubeId(u);
+  if(!id) return u;
+  const start = parseStartSeconds(u);
+  const p = new URLSearchParams(); p.set("v", id); if(start) p.set("t", String(start));
+  return `https://www.youtube.com/watch?${p.toString()}`;
+}
+function ytThumbUrl(u){
+  const id = parseYouTubeId(u);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "";
+}
+function extractGooglePhotosId(url){
+  const match1 = url.match(/\/photo\/(AF1Qip[A-Za-z0-9_-]+)/);
+  if(match1) return match1[1];
+  const match2 = url.match(/photos\.app\.goo\.gl\/([A-Za-z0-9]+)/);
+  if(match2) return match2[1];
+  return null;
+}
+function getGooglePhotosDirectUrl(url){
+  const id = extractGooglePhotosId(url);
+  if(id && id.startsWith("AF1Qip")){
+    return `https://lh3.googleusercontent.com/pw/${id}=w800`;
+  }
+  return url;
+}
 function normalizeDrive(u){
   if(!u) return "";
-  const first=String(u).trim().split(/[\s\n]+/)[0];
-  const patterns=[
+  const first = String(u).trim().split(/[\s\n]+/)[0];
+  const patterns = [
     /drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/,
     /drive\.google\.com\/open\?id=([A-Za-z0-9_-]{10,})/,
     /docs\.google\.com\/.*?\/d\/([A-Za-z0-9_-]{10,})/,
     /drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]{10,})/
   ];
-  for(const p of patterns){ const m=first.match(p); if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`; }
+  for(const p of patterns){
+    const m = first.match(p);
+    if(m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  }
   if(first.includes("/uc?export=download&id=")) return first;
   return first;
 }
-function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u||""); }
+function isGooglePhotosUrl(u){ return /photos\.google\.com|photos\.app\.goo\.gl/i.test(u || ""); }
 function isImageUrl(u){
-  if(!u) return false; const s=u.toLowerCase();
-  return /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(s)
-    || s.includes("googleusercontent.com")
-    || s.includes("/uc?export=download&id=")
-    || s.includes("lh3.google")
-    || s.includes("imgur.com")
-    || s.includes("gyazo.com");
+  if(!u) return false;
+  const lower = u.toLowerCase();
+  if(/\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/.test(lower)) return true;
+  if(lower.includes("googleusercontent.com")) return true;
+  if(lower.includes("/uc?export=download&id=")) return true;
+  if(lower.includes("lh3.google")) return true;
+  if(lower.includes("imgur.com")) return true;
+  if(lower.includes("gyazo.com")) return true;
+  return false;
 }
 function urlize(text){
-  const re=/(https?:\/\/[^\s]+)/g; const frag=document.createDocumentFragment(); let last=0, m;
-  while((m=re.exec(text))){ if(m.index>last) frag.append(text.slice(last,m.index)); const a=document.createElement("a"); a.href=m[0]; a.textContent=m[0]; a.target="_blank"; a.rel="noopener"; a.className="inline"; frag.append(a); last=re.lastIndex; }
-  if(last<text.length) frag.append(text.slice(last));
+  const re = /(https?:\/\/[^\s]+)/g;
+  const frag = document.createDocumentFragment();
+  let last = 0, m;
+  while((m = re.exec(text)) !== null){
+    if(m.index > last) frag.append(document.createTextNode(text.slice(last, m.index)));
+    const a = document.createElement("a");
+    a.href = m[0]; a.textContent = m[0];
+    a.target = "_blank"; a.rel = "noopener"; a.className = "inline";
+    frag.append(a);
+    last = re.lastIndex;
+  }
+  if(last < text.length) frag.append(document.createTextNode(text.slice(last)));
   return frag;
 }
-
-/* ========== ビュー構築 ========== */
 function pickInitialFront(headers){
   const saved = localStorage.getItem(FRONT_STORE_KEY);
   if(saved && headers.includes(saved)) return saved;
@@ -336,183 +329,64 @@ function pickInitialFront(headers){
   return headers[0] || "";
 }
 
-function rebuildView(){
-  const frontKey = el.frontSel.value;
-  rowsView = rowsAll.filter(row => {
-    const frontVal = String(row[frontKey] ?? "");
-    return el.hide.checked ? !isLearn(frontVal) : true;
-  });
-  // ペアシャッフルの索引も更新
-  if(el.pair.checked) buildPairOrder();
-  if(rowsView.length===0) idx=0; else if(idx>=rowsView.length) idx = rowsView.length-1;
-  el.count.textContent = `${rowsView.length ? idx+1 : 0} / ${rowsView.length}`;
-  buildSideList();
-}
-
-/* YouTube 埋め込み */
-function renderYouTube(sec, urlOriginal){
-  const embed=ytEmbedUrl(urlOriginal), watch=ytWatchUrl(urlOriginal), thumb=ytThumbUrl(urlOriginal);
-  if(YT_MODE==="link" || !embed){
-    const fb=document.createElement("div");
-    if(thumb){ const img=document.createElement("img"); img.src=thumb; img.alt="YouTube"; img.loading="lazy"; img.style.width="100%"; img.style.borderRadius="10px"; fb.appendChild(img); }
-    const a=document.createElement("a"); a.href=watch; a.target="_blank"; a.rel="noopener"; a.className="inline"; a.textContent="▶ YouTubeで再生"; fb.appendChild(a);
-    sec.appendChild(fb); return;
-  }
-  const box=document.createElement("div"); box.style.position="relative"; box.style.width="100%"; box.style.aspectRatio="16/9";
-  const iframe=document.createElement("iframe");
-  iframe.src=embed; iframe.loading="lazy"; iframe.allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"; iframe.setAttribute("allowfullscreen","");
-  iframe.style.position="absolute"; iframe.style.inset="0"; iframe.style.width="100%"; iframe.style.height="100%"; iframe.style.border="0";
-  box.appendChild(iframe); sec.appendChild(box);
-}
-
-/* 裏面 */
-function renderBack(row){
-  el.backBox.innerHTML="";
-  const frontKey=el.frontSel.value;
-  headers.forEach(key=>{
-    if(key===frontKey) return;
-    const raw=row[key]; if(!raw) return;
-
-    const sec=document.createElement("div"); sec.className="section";
-    const title=document.createElement("p"); title.className="sec-title"; title.textContent=key; sec.appendChild(title);
-
-    const val=String(raw).trim();
-    const tokens=val.split(/[\n,、]+|\t+/).map(s=>s.trim()).filter(Boolean);
-
-    let hasMedia=false, remainingText=val;
-
-    tokens.forEach(tok=>{
-      if(!tok) return;
-      let resolved=resolveSozaiPath(tok);
-
-      if(isYouTubeUrl(resolved)){ renderYouTube(sec,resolved); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return; }
-      if(isGooglePhotosUrl(resolved)){
-        const img=document.createElement("img"); img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
-        img.onerror=function(){ this.style.display='none'; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
-        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+function currentList(){
+  // 交(クロスシャッフル)ONなら rowsViewShuffled を使う
+  if(el.cross.checked){
+    if(!rowsViewShuffled.length || rowsViewShuffled.length!==rowsView.length){
+      rowsViewShuffled = rowsView.slice();
+      for(let i=rowsViewShuffled.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [rowsViewShuffled[i],rowsViewShuffled[j]]=[rowsViewShuffled[j],rowsViewShuffled[i]];
       }
-      if(isHttpUrl(resolved)) resolved=normalizeDrive(resolved);
-
-      if(isImageUrl(resolved)){
-        const img=document.createElement("img"); img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
-        img.onerror=function(){ this.style.display="none"; const err=document.createElement("div"); err.innerHTML=`[画像を表示できません] <a href="${resolved}" target="_blank">リンク</a>`; err.style.color="#999"; err.style.fontSize="12px"; this.parentNode.insertBefore(err,this); };
-        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
-      }
-      if(isAudioUrl(resolved)){
-        const audio=document.createElement("audio"); audio.controls=true; audio.src=resolved; audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
-        sec.appendChild(audio); const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved); sec.appendChild(cap);
-        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
-      }
-      if(isVideoUrl(resolved)){
-        const video=document.createElement("video"); video.controls=true; video.src=resolved; video.style.width="100%"; video.style.margin="8px 0";
-        sec.appendChild(video); const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved); sec.appendChild(cap);
-        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
-      }
-    });
-
-    if(remainingText && remainingText.trim()){
-      const body=document.createElement("div"); body.className="sec-body";
-      if(remainingText.includes("http")) body.appendChild(urlize(remainingText)); else body.textContent=remainingText;
-      sec.appendChild(body);
     }
-    if(!hasMedia && !remainingText.trim() && val){
-      const body=document.createElement("div"); body.className="sec-body"; body.appendChild(urlize(val)); sec.appendChild(body);
-    }
-    el.backBox.appendChild(sec);
-  });
-}
-
-/* 表示 */
-function render(){
-  if(rowsView.length===0){
-    el.front.textContent="表示できるカードがありません";
-    el.back.style.display="none"; el.front.style.display="block";
-    el.learnedTop.checked=false; el.count.textContent=`0 / 0`; return;
+    return rowsViewShuffled;
   }
-  const frontKey=el.frontSel.value;
-  const row=rowsView[idx];
-  const frontText=String(row[frontKey]??"(no value)");
-
-  if(showBack){
-    el.front.style.display="none"; el.back.style.display="block";
-    renderBack(row);
-    el.learnedTop.checked=isLearn(frontText);
-  }else{
-    el.back.style.display="none"; el.front.style.display="block";
-    el.front.textContent=frontText;
-  }
-  el.count.textContent=`${idx+1} / ${rowsView.length}`;
-  highlightSide();
+  return rowsView;
 }
 
-/* ===== ペアシャッフル（交） ===== */
-let pairOrder = []; // rowsView 上の並び順（index配列）
-function buildPairOrder(){
-  pairOrder = rowsView.map((_,i)=>i);
-  for(let i=pairOrder.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1)); [pairOrder[i],pairOrder[j]]=[pairOrder[j],pairOrder[i]];
-  }
-  // 現在の idx を最初に寄せる
-  if(pairOrder.length){
-    const at = pairOrder.indexOf(idx);
-    if(at>0){ [pairOrder[0], pairOrder[at]]=[pairOrder[at], pairOrder[0]]; }
-  }
-}
-let pairPtr = 0; // pairOrder のポインタ
-
-function nextPair(){
-  // 表→裏までは同一カード、裏→次で次カードの表へ
-  if(!showBack){ showBack=true; render(); return; }
-  // 次カード
-  pairPtr = (pairPtr + 1) % pairOrder.length;
-  idx = pairOrder[pairPtr];
-  showBack = false; render();
-}
-function prevPair(){
-  if(showBack){ showBack=false; render(); return; }
-  pairPtr = (pairPtr - 1 + pairOrder.length) % pairOrder.length;
-  idx = pairOrder[pairPtr];
-  showBack = true; render();
-}
-
-/* ===== 左ペイン ===== */
+/* ---------- サイドペイン ---------- */
 function buildSideList(){
-  // タイトル
-  $("sideTitle").textContent = SHEET || "ページ";
-  // 見出しセレクト：50ごと＋手動見出し（OK=見）を混在
+  el.sideTitle.textContent = PAGE_NAME;
+
   el.jumpHead.innerHTML = "";
-  const opts=[];
-  // 50 ごと
-  for(let i=0;i<rowsView.length;i+=50){
-    const word = String(rowsView[i][el.frontSel.value] ?? "");
-    opts.push({i, label:`No.${i+1}: ${word}`});
+  const opts = [];
+
+  const list = currentList();
+
+  for(let i=0;i<list.length;i+=50){
+    const word = String(list[i][BASE_KEY] ?? "");
+    const op = document.createElement("option");
+    op.value=String(i);
+    op.textContent = `${i+1}: ${word}`;
+    el.jumpHead.appendChild(op);
   }
-  // 手動見出し（OK=見）扱い
-  rowsAll.forEach((row, iAll)=>{
-    const word = String(row[el.frontSel.value] ?? "");
-    if(localStorage.getItem(KEY_PREFIX+"HEAD:"+word)==="1"){
-      // rowsView からその index を探す（非表示なら存在しない）
-      const j = rowsView.findIndex(r=>String(r[el.frontSel.value]??"")===word);
-      if(j>=0) opts.push({i:j, label:`★ ${word}`});
+
+  rowsAll.forEach(row=>{
+    const word = String(row[BASE_KEY] ?? "");
+    if(isHead(word)){
+      const j = list.findIndex(r => String(r[BASE_KEY] ?? "") === word);
+      if(j>=0){
+        const op=document.createElement("option");
+        op.value=String(j);
+        op.textContent=`★ ${word}`;
+        el.jumpHead.appendChild(op);
+      }
     }
-  });
-  // ラベル昇順（番号が混在しても見やすく）
-  opts.sort((a,b)=>a.i-b.i).forEach(o=>{
-    const op=document.createElement("option"); op.value=String(o.i); op.textContent=o.label; el.jumpHead.appendChild(op);
   });
 }
 
 function highlightSide(){
-  // リスト本体（簡易レンダー）
   el.sideList.innerHTML = "";
-  rowsView.forEach((row, i)=>{
-    const word = String(row[el.frontSel.value] ?? "");
-    const div=document.createElement("div"); div.className="row"+(isLearn(word)?" learned":"")+(i===idx?" active":"");
+  const list = currentList();
+  list.forEach((row, i)=>{
+    const word = String(row[BASE_KEY] ?? "");
+    const div=document.createElement("div");
+    div.className = "row" + (isLearn(word)?" learned":"") + (i===idx?" active":"");
     div.textContent = word;
     div.addEventListener("click", ()=>{ idx=i; showBack=false; render(); });
     el.sideList.appendChild(div);
   });
-  // 見出しセレクトの位置を更新
+  // 近い見出しを選択状態に
   let nearest=0;
   for(let k=0;k<el.jumpHead.options.length;k++){
     const v=parseInt(el.jumpHead.options[k].value,10);
@@ -521,80 +395,285 @@ function highlightSide(){
   el.jumpHead.selectedIndex = nearest;
 }
 
-/* ===== データ取得 ===== */
+/* ---------- 表示系 ---------- */
+function renderYouTube(sec, urlOriginal){
+  const embed = ytEmbedUrl(urlOriginal);
+  const watch = ytWatchUrl(urlOriginal);
+  const thumb = ytThumbUrl(urlOriginal);
+
+  if(YT_MODE === "link" || !embed){
+    const fb = document.createElement("div");
+    fb.style.position="relative"; fb.style.width="100%"; fb.style.aspectRatio="16/9"; fb.style.borderRadius="10px"; fb.style.overflow="hidden"; fb.style.border="1px solid rgba(255,255,255,.12)"; fb.style.background="#000";
+    if(thumb){
+      const img = document.createElement("img");
+      img.src = thumb; img.alt = "YouTube Thumbnail"; img.loading = "lazy";
+      img.style.width="100%"; img.style.height="100%"; img.style.objectFit="cover";
+      fb.appendChild(img);
+    }
+    const a = document.createElement("a");
+    a.href = watch; a.target = "_blank"; a.rel = "noopener";
+    a.style.position="absolute"; a.style.inset="0"; a.style.display="flex"; a.style.alignItems="center"; a.style.justifyContent="center"; a.style.textDecoration="none"; a.style.color="#fff"; a.style.fontWeight="700"; a.textContent="▶ YouTubeで再生";
+    fb.appendChild(a);
+    sec.appendChild(fb);
+    return;
+  }
+
+  const box = document.createElement("div");
+  box.style.position="relative"; box.style.width="100%"; box.style.aspectRatio="16/9";
+  const iframe = document.createElement("iframe");
+  iframe.src = embed;
+  iframe.loading = "lazy";
+  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+  iframe.setAttribute("allowfullscreen", "");
+  iframe.style.position="absolute"; iframe.style.inset="0"; iframe.style.width="100%"; iframe.style.height="100%"; iframe.style.border="0";
+
+  const under = document.createElement("div");
+  under.className = "sec-body"; under.style.opacity=".7";
+  const link = document.createElement("a");
+  link.href = watch; link.target = "_blank"; link.rel = "noopener"; link.textContent = "YouTubeで開く"; link.className = "inline";
+  under.appendChild(link);
+
+  box.appendChild(iframe);
+  sec.appendChild(box);
+  sec.appendChild(under);
+}
+
+function renderBack(row){
+  el.backBox.innerHTML = "";
+  const frontKey = el.frontSel.value;
+
+  headers.forEach(key => {
+    if(key === frontKey) return;
+    const raw = row[key];
+    if(!raw) return;
+
+    const sec = document.createElement("div");
+    sec.className = "section";
+    const title = document.createElement("p");
+    title.className = "sec-title";
+    title.textContent = key;
+    sec.appendChild(title);
+
+    const val = String(raw).trim();
+
+    const tokens = val.split(/[\n,、]+|\t+/).map(s => s.trim()).filter(Boolean);
+
+    let hasMedia = false;
+    let remainingText = val;
+
+    tokens.forEach(tok => {
+      if(!tok) return;
+      let resolved = resolveSozaiPath(tok);
+
+      if(isYouTubeUrl(resolved)){ renderYouTube(sec, resolved); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return; }
+
+      if(isGooglePhotosUrl(resolved)){
+        const img = document.createElement("img");
+        img.className = "cardimg";
+        img.src = getGooglePhotosDirectUrl(resolved);
+        img.alt = key; img.loading = "lazy";
+        img.onerror = function(){
+          this.style.display='none';
+          const err=document.createElement("div");
+          const a=document.createElement("a"); a.href=resolved; a.textContent="リンク"; a.target="_blank"; a.rel="noopener";
+          err.style.color="#999"; err.style.fontSize="12px"; err.textContent="[画像を表示できません] "; err.appendChild(a);
+          this.parentNode.insertBefore(err,this);
+        };
+        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+      }
+
+      if(isHttpUrl(resolved)) resolved = normalizeDrive(resolved);
+
+      if(isImageUrl(resolved)){
+        const img=document.createElement("img");
+        img.className="cardimg"; img.src=resolved; img.alt=key; img.loading="lazy";
+        img.onerror=function(){
+          this.style.display="none";
+          const err=document.createElement("div");
+          const a=document.createElement("a"); a.href=resolved; a.textContent="リンク"; a.target="_blank"; a.rel="noopener";
+          err.style.color="#999"; err.style.fontSize="12px"; err.textContent="[画像を表示できません] "; err.appendChild(a);
+          this.parentNode.insertBefore(err,this);
+        };
+        sec.appendChild(img); hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+      }
+
+      if(isAudioUrl(resolved)){
+        const audio=document.createElement("audio"); audio.controls=true; audio.src=resolved;
+        audio.addEventListener("play",()=>{ if(lastAudio && lastAudio!==audio) lastAudio.pause(); lastAudio=audio; });
+        sec.appendChild(audio);
+        const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved);
+        sec.appendChild(cap);
+        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+      }
+
+      if(isVideoUrl(resolved)){
+        const video=document.createElement("video"); video.controls=true; video.src=resolved;
+        video.style.width="100%"; video.style.margin="8px 0";
+        sec.appendChild(video);
+        const cap=document.createElement("div"); cap.className="sec-body"; cap.style.opacity=".7"; cap.textContent=baseName(resolved);
+        sec.appendChild(cap);
+        hasMedia=true; remainingText=remainingText.replace(tok,"").trim(); return;
+      }
+    });
+
+    if(remainingText && remainingText.trim()){
+      const body=document.createElement("div");
+      body.className="sec-body";
+      if(remainingText.includes("http")) body.appendChild(urlize(remainingText));
+      else body.textContent=remainingText;
+      sec.appendChild(body);
+    }
+
+    if(!hasMedia && !remainingText.trim() && val){
+      const body=document.createElement("div");
+      body.className="sec-body"; body.appendChild(urlize(val)); sec.appendChild(body);
+    }
+
+    el.backBox.appendChild(sec);
+  });
+}
+
+function rebuildView(){
+  const frontKey = el.frontSel.value;
+  rowsView = rowsAll.filter(row => {
+    const frontVal = String(row[frontKey] ?? "");
+    return el.hide.checked ? !isLearn(String(row[BASE_KEY] ?? "")) : true;
+  });
+  rowsViewShuffled = []; // 交ON時は次回参照時に再生成
+  if(rowsView.length === 0) idx = 0;
+  else if(idx >= rowsView.length) idx = rowsView.length - 1;
+  el.count.textContent = `${rowsView.length ? idx+1 : 0}/${rowsView.length}`;
+  buildSideList();
+  highlightSide();
+}
+
+function render(){
+  const list = currentList();
+
+  if(list.length===0){
+    el.front.textContent="表示できるカードがありません";
+    el.back.style.display="none"; el.front.style.display="block";
+    el.ok.checked=false; el.count.textContent=`0/0`; return;
+  }
+  const frontKey=el.frontSel.value;
+  const row=list[idx];
+  const wordA = String(row[BASE_KEY] ?? "");
+  const frontText=String(row[frontKey]??"(no value)");
+
+  if(showBack){
+    el.front.style.display="none"; el.back.style.display="block";
+    renderBack(row);
+  }else{
+    el.back.style.display="none"; el.front.style.display="block";
+    el.front.textContent=frontText;
+  }
+  el.ok.checked = isLearn(wordA);
+  el.head.checked = isHead(wordA);
+  el.count.textContent=`${idx+1}/${list.length}`;
+  highlightSide();
+}
+
+/* ---------- ナビ ---------- */
+function next(){
+  const list = currentList();
+  if(!list.length) return;
+  if(!showBack){ showBack=true; render(); }
+  else{ idx=(idx+1)%list.length; showBack=false; render(); }
+}
+function prev(){
+  const list = currentList();
+  if(!list.length) return;
+  if(showBack){ showBack=false; render(); }
+  else{ idx=(idx-1+list.length)%list.length; showBack=true; render(); }
+}
+
+/* ---------- データ取得 ---------- */
 async function load(){
   try{
-    if(!SHEET){ el.front.textContent="URLに ?sheet=シート名 を指定してください"; return; }
+    if (!SHEET) {
+      el.front.textContent = "URLに ?sheet=シート名 を指定してください";
+      $("sideTitle").textContent = PAGE_NAME;
+      return;
+    }
     const jsonUrl = API_URL + encodeURIComponent(SHEET) + ".json";
-    const res = await fetch(jsonUrl, { cache:"no-store" });
-    if(!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
+    const res = await fetch(jsonUrl, {cache:"no-store"});
+    if (!res.ok) throw new Error(`JSONの読み込み失敗: ${res.status} ${res.statusText}`);
+
     const data = await res.json();
     rowsAll = data;
     headers = rowsAll.length ? Object.keys(rowsAll[0]) : [];
+    BASE_KEY = headers[0] || "";
 
-    // 表セレクト
-    el.frontSel.innerHTML="";
-    headers.forEach(k=>{ const op=document.createElement("option"); op.value=k; op.textContent=k; el.frontSel.appendChild(op); });
+    el.frontSel.innerHTML = "";
+    headers.forEach(k => {
+      const opt = document.createElement("option");
+      opt.value = k; opt.textContent = k; el.frontSel.appendChild(opt);
+    });
 
     const initial = pickInitialFront(headers);
     el.frontSel.value = initial;
     localStorage.setItem(FRONT_STORE_KEY, initial);
 
     rebuildView();
-    idx=0; showBack=false; render();
-  }catch(e){
+    idx = 0;
+    showBack = false;
+    render();
+
+  } catch(e){
     el.front.textContent = `取得エラー: ${e.message}`;
     console.error(e);
   }
 }
 
-/* ===== イベント ===== */
-el.learnedTop.addEventListener("change",(ev)=>{
-  if(!rowsView.length) return;
-  const w = String(rowsView[idx][el.frontSel.value] ?? "");
+/* ---------- イベント ---------- */
+$("listBtn").addEventListener("click", ()=>{ el.side.classList.add("open"); });
+$("closeSide").addEventListener("click", ()=>{ el.side.classList.remove("open"); });
+
+el.jumpHead.addEventListener("change", (e)=>{
+  const v = parseInt(e.target.value,10);
+  if(!isNaN(v)){ idx = v; showBack=false; render(); }
+});
+
+el.ok.addEventListener("change", (ev)=>{
+  const list = currentList();
+  if(!list.length) return;
+  const w = String(list[idx][BASE_KEY] ?? "");
   setLearn(w, ev.target.checked);
-  if(el.hide.checked){ rebuildView(); if(idx>=rowsView.length) idx=0; }
+  if(el.hide.checked){ rebuildView(); }
   render();
 });
 el.hide.addEventListener("change", ()=>{ rebuildView(); render(); });
+el.cross.addEventListener("change", ()=>{ rowsViewShuffled=[]; idx=0; showBack=false; render(); });
+el.head.addEventListener("change", (ev)=>{
+  const list = currentList();
+  if(!list.length) return;
+  const w = String(list[idx][BASE_KEY] ?? "");
+  setHead(w, ev.target.checked);
+  buildSideList(); highlightSide();
+});
 
-el.frontSel.addEventListener("change", ()=>{
+el.frontSel.addEventListener("change", () => {
   localStorage.setItem(FRONT_STORE_KEY, el.frontSel.value);
-  rebuildView(); showBack=false; render();
+  rebuildView();
+  showBack = false;
+  render();
 });
 
-$("prevBtn").addEventListener("click", ()=>{ if(!rowsView.length) return; if(el.pair.checked) prevPair(); else { if(showBack){ showBack=false; render(); } else { idx=(idx-1+rowsView.length)%rowsView.length; showBack=true; render(); } } });
-$("nextBtn").addEventListener("click", ()=>{ if(!rowsView.length) return; if(el.pair.checked) nextPair(); else { if(!showBack){ showBack=true; render(); } else { idx=(idx+1)%rowsView.length; showBack=false; render(); } } });
+$("prevBtn").addEventListener("click", prev);
+$("nextBtn").addEventListener("click", next);
 
-el.pair.addEventListener("change", ()=>{
-  if(el.pair.checked){ buildPairOrder(); pairPtr = pairOrder.indexOf(idx); if(pairPtr<0) pairPtr=0; }
+// ダブルタップズーム防止の保険
+document.addEventListener('dblclick', e=>{
+  if(e.target.closest('footer.nav')) e.preventDefault();
+}, {passive:false});
+
+document.addEventListener("keydown", (e) => {
+  if(e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+  if(e.key === "ArrowRight") next();
+  else if(e.key === "ArrowLeft") prev();
+  else if(e.key === " ") { e.preventDefault(); showBack=!showBack; render(); }
 });
 
-el.ok.addEventListener("change", ()=>{
-  // OK=見出しにする（現在の単語を手動見出しに追加/削除）
-  if(!rowsView.length) return;
-  const w = String(rowsView[idx][el.frontSel.value] ?? "");
-  if(el.ok.checked) localStorage.setItem(KEY_PREFIX+"HEAD:"+w,"1");
-  else localStorage.removeItem(KEY_PREFIX+"HEAD:"+w);
-  buildSideList();
-});
-
-/* 左ペイン */
-el.listBtn.addEventListener("click", ()=>{ document.body.classList.add("side-open"); });
-el.closeSide.addEventListener("click", ()=>{ document.body.classList.remove("side-open"); });
-el.jumpHead.addEventListener("change", ()=>{
-  const v = parseInt(el.jumpHead.value,10);
-  if(!isNaN(v)){ idx=v; showBack=false; render(); }
-});
-
-/* キーボード */
-document.addEventListener("keydown",(e)=>{
-  if(e.target.tagName==="INPUT" || e.target.tagName==="TEXTAREA") return;
-  if(e.key==="ArrowRight") $("nextBtn").click();
-  else if(e.key==="ArrowLeft") $("prevBtn").click();
-});
-
-/* 初期化 */
 load();
 </script>
 </body>
