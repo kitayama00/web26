@@ -80,7 +80,14 @@ header{
 .ck{ display:inline-flex; align-items:center; gap:4px; font-size:13px; }
 .ck input{ width:16px; height:16px; }
 
-.wrap{ max-width:900px; margin:0 auto; padding:var(--pad); }
+/* 【修正箇所】カードコンテンツの下部余白を追加 */
+.wrap{ 
+  max-width:900px; 
+  margin:0 auto; 
+  padding:var(--pad);
+  /* ▼ここが修正点：下部に余白を追加してフッターに隠れないようにする */
+  padding-bottom: calc(var(--nav-btn-h) + 40px + env(safe-area-inset-bottom));
+}
 .card{ background:transparent; }
 
 /* カード本文（--card-font-scale で一括調整） */
@@ -303,7 +310,7 @@ function resolveSozaiPath(u){
   if(!u) return "";
   let s = String(u).trim();
   if(!s) return s;
-  s = s.replace(/^[\s,;:()［］【】「」『』“”'"。．、]+|[\s,;:()［］【】「」『』“”'"。．、]+$/g, "");
+  s = s.replace(/^[\s,;:()［］【】「」『』""'"。．、]+|[\s,;:()［］【】「」『』""'"。．、]+$/g, "");
   if(!isLocalLike(s)) return s;
   if(s.includes("sozai/")) s = s.split("/").pop();
   if(hasExt(s) && !s.startsWith("./") && !s.startsWith("../") && !s.startsWith("/")){
